@@ -1,3 +1,4 @@
 .pio
 .vscode
 pcb/*-backups
+pcb/gerber/*.zip
