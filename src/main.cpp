@@ -7,6 +7,7 @@
 #include <SH1106Wire.h>
 
 #include <Preferences.h>
+#include <esp32-config-lib.hpp>
 
 #define REED_STATUS_LED 25
 #define REED_CONTACT 27
@@ -217,21 +218,41 @@ void measuring_thread() {
   // TODO: Measure current consumption and eliminate flaky signals + send some mqtt messages if nccesary
 }
 
-void setup() {
-  Serial.begin(115200);
+enum ProgramMode {
+	RUN,
+	CONFIG
+};
 
+ProgramMode currentProgramMode = RUN;
+
+esp32config::Configuration config("SHO Config", {
+		new esp32config::Namespace("General", "general", {
+			new esp32config::Entry("NTP Hostname", esp32config::TEXT, "ntp-host", false, "pool.ntp.org"),
+			new esp32config::Entry("Display Timeout (ms)", esp32config::INTEGER, "display-timeout", false, "60000")
+		}),
+		new esp32config::Namespace("WiFi", "wifi", {
+			new esp32config::Entry("SSID", esp32config::TEXT, "ssid"),
+			new esp32config::Entry("Password", esp32config::PASSWORD, "password")
+		}),
+		new esp32config::Namespace("MQTT", "mqtt", {
+			new esp32config::Entry("Hostname", esp32config::TEXT, "hostname"),
+			new esp32config::Entry("Username", esp32config::TEXT, "username"),
+			new esp32config::Entry("Password",esp32config:: PASSWORD, "password")
+		})}
+	);
+
+esp32config::Server configServer(config);
+
+void setup_config() {
+	configServer.begin("Smart Home Agent", "sha-secret", IPAddress(192, 168,10, 1));
+}
+
+void setup_run() {
   // Read preferences
   Preferences wifi, ntp, mqtt;
   wifi.begin("wifi", true);
   ntp.begin("ntp", true);
   mqtt.begin("mqtt", true);
-
-  // Initialize pin modes
-  pinMode(REED_STATUS_LED, OUTPUT);
-  pinMode(IR_STATUS_LED, OUTPUT);
-  pinMode(REED_CONTACT, INPUT);
-  pinMode(IR_SENSOR, INPUT);
-  pinMode(BUTTON, INPUT);
 
   // Initialize WiFi
   char ssid[32];
@@ -252,9 +273,44 @@ void setup() {
   configTzTime(TIMEZONE, "pool.ntp.org");
 }
 
-void loop() {
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize pin modes
+  pinMode(REED_STATUS_LED, OUTPUT);
+  pinMode(IR_STATUS_LED, OUTPUT);
+  pinMode(REED_CONTACT, INPUT);
+  pinMode(IR_SENSOR, INPUT);
+  pinMode(BUTTON, INPUT);
+
+  // Check wich mode to start
+  if(digitalRead(BUTTON) == HIGH) {
+	currentProgramMode = CONFIG;
+  }
+  if(currentProgramMode == RUN)  {
+	setup_run();
+  }
+  if(currentProgramMode == CONFIG)  {
+	setup_config();
+  }
+}
+
+void loop_config() {
+	configServer.loop();
+}
+
+void loop_run() {
   digitalWrite(IR_STATUS_LED, !digitalRead(IR_SENSOR));
   digitalWrite(REED_STATUS_LED, digitalRead(REED_CONTACT));
   input_thread();
   output_thread();
+}
+
+void loop() {
+  if(currentProgramMode == RUN)  {
+	loop_run();
+  }
+  if(currentProgramMode == CONFIG)  {
+	loop_config();
+  }
 }
