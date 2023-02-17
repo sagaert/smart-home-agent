@@ -87,7 +87,7 @@ void renderWifiPage() {
 void renderTimePage() {
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(0, 0, "Time");
+  display.drawString(0, 0, "Zeit");
 
   // Super hack for generating an extended RFC3339 string based on UTC
 /*  display.setTextAlignment(TEXT_ALIGN_RIGHT);
@@ -115,7 +115,7 @@ void renderTimePage() {
 void renderElectricityPage() {
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(0, 0, "Electricity");
+  display.drawString(0, 0, "Stromverbrauch");
   display.drawLine(0, 12, 127, 12);
 }
 
