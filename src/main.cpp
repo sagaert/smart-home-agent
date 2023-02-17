@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 #include <WiFi.h>
-#include <time.h>
+#include <ezTime.h>
 
 #include <Wire.h>
 #include <SH1106Wire.h>
@@ -17,24 +17,22 @@
 
 #define BUTTON 26                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
 
-#define TIMEZONE PSTR("CET-1CEST,M3.5.0/02,M10.5.0/03")
-
 SH1106Wire display(0x3c, SDA, SCL);
 
-String getNameOfDay(int d) {
+String getNameOfDay(uint8_t d) {
   switch(d) {
-    case 0: return "Sonntag";
-    case 1: return "Montag";
-    case 2: return "Dienstag";
-    case 3: return "Mittwoch";
-    case 4: return "Donnerstag";
-    case 5: return "Freitag";
-    case 6: return "Samstag";
+    case SUNDAY: return "Sonntag";
+    case MONDAY: return "Montag";
+    case TUESDAY: return "Dienstag";
+    case WEDNESDAY: return "Mittwoch";
+    case THURSDAY: return "Donnerstag";
+    case FRIDAY: return "Freitag";
+    case SATURDAY: return "Samstag";
     default: return "Unbekannt";
   }
 }
 
-String getNameOfDaylightSavingTime(int dst) {
+String getNameOfDaylightSavingTime(bool dst) {
   if(dst) {
     return "Sommerzeit";
   } else {
@@ -85,21 +83,19 @@ void renderTimePage() {
   display.setTextAlignment(TEXT_ALIGN_LEFT);
   display.drawString(0, 0, "Time");
   display.drawLine(0, 12, 127, 12);
-  time_t now_t;
-  time(&now_t);
-  tm now;
-  localtime_r(&now_t, &now);
+  Timezone tz;
+  tz.setLocation("de");
   char dateString[36];
   char timeString[36];
-  sprintf(dateString, "%02d.%02d.%04d", now.tm_mday, now.tm_mon + 1, now.tm_year + 1900);
-  sprintf(timeString, "%02d:%02d:%02d", now.tm_hour, now.tm_min, now.tm_sec);
+  sprintf(dateString, "%02d.%02d.%04d", tz.day(), tz.month(), tz.year());
+  sprintf(timeString, "%02d:%02d:%02d", tz.hour(), tz.minute(), tz.second());
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(0, 15, getNameOfDay(now.tm_wday));
-  display.drawString(0, 45, "CET");
+  display.drawString(0, 15, getNameOfDay(tz.weekday()));
+  display.drawString(0, 45, tz.getTimezoneName());
   display.setTextAlignment(TEXT_ALIGN_RIGHT);
   display.drawString(127, 15, dateString);
-  display.drawString(127, 45, getNameOfDaylightSavingTime(now.tm_isdst));
+  display.drawString(127, 45, getNameOfDaylightSavingTime(tz.isDST()));
   display.setFont(ArialMT_Plain_16);
   display.drawString(127, 27, timeString);
 }
@@ -227,8 +223,8 @@ ProgramMode currentProgramMode = RUN;
 
 esp32config::Configuration config("SHO Config", {
 		new esp32config::Namespace("General", "general", {
-			new esp32config::Entry("NTP Hostname", esp32config::TEXT, "ntp-host", false, "pool.ntp.org"),
-			new esp32config::Entry("Display Timeout (ms)", esp32config::INTEGER, "display-timeout", false, "60000")
+			new esp32config::Entry("NTP-Hostname", esp32config::TEXT, "ntp-host", false, "pool.ntp.org"),
+			new esp32config::Entry("Display-Timeout (ms)", esp32config::INTEGER, "display-timeout", false, "60000")
 		}),
 		new esp32config::Namespace("WiFi", "wifi", {
 			new esp32config::Entry("SSID", esp32config::TEXT, "ssid"),
@@ -242,6 +238,9 @@ esp32config::Configuration config("SHO Config", {
 	);
 
 esp32config::Server configServer(config);
+char ntp_hostname[32];
+char ssid[32];
+char password[64];
 
 void setup_config() {
 	configServer.begin("Smart Home Agent", "sha-secret", IPAddress(192, 168,10, 1));
@@ -255,8 +254,6 @@ void setup_run() {
   mqtt.begin("mqtt", true);
 
   // Initialize WiFi
-  char ssid[32];
-  char password[64];
   wifi.getString("ssid", ssid, 31);
   wifi.getString("password", password, 63);
   WiFi.mode(WIFI_STA);
@@ -267,10 +264,7 @@ void setup_run() {
   display.flipScreenVertically();
 
   // Initialize local time from NTP Server
-  char ntp_hostname[32];
-  ntp.getString("hostname", ntp_hostname, 31);
-//  configTzTime(TIMEZONE, ntp_hostname);
-  configTzTime(TIMEZONE, "pool.ntp.org");
+  ezt::waitForSync();
 }
 
 void setup() {
@@ -287,6 +281,8 @@ void setup() {
   if(digitalRead(BUTTON) == HIGH) {
 	currentProgramMode = CONFIG;
   }
+
+  // Setup the startet mode
   if(currentProgramMode == RUN)  {
 	setup_run();
   }
@@ -307,6 +303,7 @@ void loop_run() {
 }
 
 void loop() {
+  // Loop the started mode
   if(currentProgramMode == RUN)  {
 	loop_run();
   }
