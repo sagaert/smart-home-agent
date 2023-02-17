@@ -82,6 +82,12 @@ void renderTimePage() {
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
   display.drawString(0, 0, "Time");
+
+  // Super hack for generating an extended RFC3339 string based on UTC
+  display.setTextAlignment(TEXT_ALIGN_RIGHT);
+  display.drawString(127, 0, UTC.dateTime(RFC3339_EXT));
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+  
   display.drawLine(0, 12, 127, 12);
   Timezone tz;
   tz.setLocation("de");
