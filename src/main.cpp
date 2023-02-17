@@ -40,6 +40,12 @@ String getNameOfDaylightSavingTime(bool dst) {
   }
 }
 
+void renderLoadingPage() {
+  display.setFont(ArialMT_Plain_10);
+  display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
+  display.drawString(64, 32, "Connecting WiFi and\nsynchronize time...");
+}
+
 void renderHomePage() {
   display.setFont(ArialMT_Plain_24);
   display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
@@ -84,9 +90,9 @@ void renderTimePage() {
   display.drawString(0, 0, "Time");
 
   // Super hack for generating an extended RFC3339 string based on UTC
-  display.setTextAlignment(TEXT_ALIGN_RIGHT);
+/*  display.setTextAlignment(TEXT_ALIGN_RIGHT);
   display.drawString(127, 0, UTC.dateTime(RFC3339_EXT));
-  display.setTextAlignment(TEXT_ALIGN_LEFT);
+  display.setTextAlignment(TEXT_ALIGN_LEFT); */
   
   display.drawLine(0, 12, 127, 12);
   Timezone tz;
@@ -244,9 +250,6 @@ esp32config::Configuration config("SHO Config", {
 	);
 
 esp32config::Server configServer(config);
-char ntp_hostname[32];
-char ssid[32];
-char password[64];
 
 void setup_config() {
 	configServer.begin("Smart Home Agent", "sha-secret", IPAddress(192, 168,10, 1));
@@ -260,6 +263,8 @@ void setup_run() {
   mqtt.begin("mqtt", true);
 
   // Initialize WiFi
+  char ssid[32];
+  char password[64];
   wifi.getString("ssid", ssid, 31);
   wifi.getString("password", password, 63);
   WiFi.mode(WIFI_STA);
@@ -270,7 +275,11 @@ void setup_run() {
   display.flipScreenVertically();
 
   // Initialize local time from NTP Server
+  renderLoadingPage();
+  display.display();
   ezt::waitForSync();
+  display.clear();
+  display.display();
 }
 
 void setup() {
