@@ -43,7 +43,7 @@ String getNameOfDaylightSavingTime(bool dst) {
 void renderLoadingPage() {
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
-  display.drawString(64, 32, "Connecting WiFi and\nsynchronize time...");
+  display.drawString(64, 32, "Verbinde WLAN und\nsynchronisiere Zeit...");
 }
 
 void renderHomePage() {
@@ -55,7 +55,7 @@ void renderHomePage() {
 void renderWifiPage() {
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(0, 0, "WiFi");
+  display.drawString(0, 0, "WLAN");
   display.drawLine(0, 12, 127, 12);
   switch(WiFi.status()) {
     case WL_CONNECTED:
@@ -69,7 +69,7 @@ void renderWifiPage() {
       sprintf(wifiChannel, "Kanal: %d", WiFi.channel());
       display.setFont(ArialMT_Plain_10);
       display.setTextAlignment(TEXT_ALIGN_LEFT);
-      display.drawString(0, 15, "Status: Connected");
+      display.drawString(0, 15, "Status: Verbunden");
       display.drawString(0, 27, wifiName);
       display.drawString(0, 39, wifiAddress);
       display.drawString(0, 51, wifiChannel);
@@ -79,7 +79,7 @@ void renderWifiPage() {
     default:
       display.setFont(ArialMT_Plain_10);
       display.setTextAlignment(TEXT_ALIGN_LEFT);
-      display.drawString(0, 15, "Status: Connecting...");
+      display.drawString(0, 15, "Status: Verbinden...");
       break;
   }
 }
@@ -234,18 +234,15 @@ enum ProgramMode {
 ProgramMode currentProgramMode = RUN;
 
 esp32config::Configuration config("SHO Config", {
-		new esp32config::Namespace("General", "general", {
-			new esp32config::Entry("NTP-Hostname", esp32config::TEXT, "ntp-host", false, "pool.ntp.org"),
-			new esp32config::Entry("Display-Timeout (ms)", esp32config::INTEGER, "display-timeout", false, "60000")
-		}),
 		new esp32config::Namespace("WiFi", "wifi", {
 			new esp32config::Entry("SSID", esp32config::TEXT, "ssid"),
 			new esp32config::Entry("Password", esp32config::PASSWORD, "password")
 		}),
 		new esp32config::Namespace("MQTT", "mqtt", {
-			new esp32config::Entry("Hostname", esp32config::TEXT, "hostname"),
+			new esp32config::Entry("URL", esp32config::TEXT, "url"),
 			new esp32config::Entry("Username", esp32config::TEXT, "username"),
-			new esp32config::Entry("Password",esp32config:: PASSWORD, "password")
+			new esp32config::Entry("Password",esp32config::PASSWORD, "password"),
+			new esp32config::Entry("Topic",esp32config::TEXT, "topic", false, "smart-home")
 		})}
 	);
 
@@ -257,9 +254,8 @@ void setup_config() {
 
 void setup_run() {
   // Read preferences
-  Preferences wifi, ntp, mqtt;
+  Preferences wifi, mqtt;
   wifi.begin("wifi", true);
-  ntp.begin("ntp", true);
   mqtt.begin("mqtt", true);
 
   // Initialize WiFi
