@@ -1,21 +1,4 @@
-#include <Arduino.h>
-
-#include <WiFi.h>
-#include <ezTime.h>
-
-#include <Wire.h>
-#include <SH1106Wire.h>
-
-#include <Preferences.h>
-#include <esp32-config-lib.hpp>
-
-#define REED_STATUS_LED 25
-#define REED_CONTACT 27
-
-#define IR_STATUS_LED 18                                                                                                                                                                                         
-#define IR_SENSOR 17  
-
-#define BUTTON 26                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+#include <agent.hpp>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
 
 SH1106Wire display(0x3c, SDA, SCL);
 
@@ -233,77 +216,53 @@ enum ProgramMode {
 
 ProgramMode currentProgramMode = RUN;
 
-esp32config::Configuration config("SHO Config", {
-		new esp32config::Namespace("WiFi", "wifi", {
-			new esp32config::Entry("SSID", esp32config::TEXT, "ssid"),
-			new esp32config::Entry("Password", esp32config::PASSWORD, "password")
-		}),
-		new esp32config::Namespace("MQTT", "mqtt", {
-			new esp32config::Entry("URL", esp32config::TEXT, "url"),
-			new esp32config::Entry("Username", esp32config::TEXT, "username"),
-			new esp32config::Entry("Password",esp32config::PASSWORD, "password"),
-			new esp32config::Entry("Topic",esp32config::TEXT, "topic", false, "smart-home")
-		})}
-	);
-
-esp32config::Server configServer(config);
-
-void setup_config() {
-	configServer.begin("Smart Home Agent", "sha-secret", IPAddress(192, 168,10, 1));
-}
+AgentConfiguration configuration;
 
 void setup_run() {
-  // Read preferences
-  Preferences wifi, mqtt;
-  wifi.begin("wifi", true);
-  mqtt.begin("mqtt", true);
+	// Load configuration
+	configuration.load();
 
-  // Initialize WiFi
-  char ssid[32];
-  char password[64];
-  wifi.getString("ssid", ssid, 31);
-  wifi.getString("password", password, 63);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+	// Initialize WiFi
+	WiFi.mode(WIFI_STA);
+	WiFi.begin(configuration.getWiFiSSID(), configuration.getWiFiPassword());
+	Serial.printf("\nStarting WiFi with SSID '%s'.\n\n", configuration.getWiFiSSID());
 
-   // Initialize OLED display
-  display.init();
-  display.flipScreenVertically();
-
-  // Initialize local time from NTP Server
-  renderLoadingPage();
-  display.display();
-  ezt::waitForSync();
-  display.clear();
-  display.display();
+	// Initialize local time from NTP Server
+	renderLoadingPage();
+	display.display();
+	Serial.printf("\nStarting time synchronisation...");
+	ezt::waitForSync();
+	Serial.printf("finished\n\n");
+	display.clear();
+	display.display();
 }
 
 void setup() {
-  Serial.begin(115200);
+	Serial.begin(115200);
 
-  // Initialize pin modes
-  pinMode(REED_STATUS_LED, OUTPUT);
-  pinMode(IR_STATUS_LED, OUTPUT);
-  pinMode(REED_CONTACT, INPUT);
-  pinMode(IR_SENSOR, INPUT);
-  pinMode(BUTTON, INPUT);
+	// Initialize pin modes
+	pinMode(REED_STATUS_LED, OUTPUT);
+	pinMode(IR_STATUS_LED, OUTPUT);
+	pinMode(REED_CONTACT, INPUT);
+	pinMode(IR_SENSOR, INPUT);
+	pinMode(BUTTON, INPUT);
 
-  // Check wich mode to start
-  if(digitalRead(BUTTON) == HIGH) {
-	currentProgramMode = CONFIG;
-  }
+	// Initialize OLED display
+	display.init();
+	display.flipScreenVertically();
 
-  // Setup the startet mode
-  if(currentProgramMode == RUN)  {
-	setup_run();
-  }
-  if(currentProgramMode == CONFIG)  {
-	setup_config();
-  }
-}
+	// Check wich mode to start
+	if(digitalRead(BUTTON) == HIGH) {
+		currentProgramMode = CONFIG;
+	}
 
-void loop_config() {
-	configServer.loop();
+	// Setup the startet mode
+	if(currentProgramMode == RUN)  {
+		setup_run();
+	}
+	if(currentProgramMode == CONFIG)  {
+		configuration.setupConfigMode(&display);
+	}
 }
 
 void loop_run() {
@@ -319,6 +278,6 @@ void loop() {
 	loop_run();
   }
   if(currentProgramMode == CONFIG)  {
-	loop_config();
+	configuration.loopConfigMode();
   }
 }
