@@ -60,9 +60,8 @@ void AgentConfiguration::setupConfigMode(SH1106Wire* display) {
 		);
 	this->server = new esp32config::Server(config);
 	const char* ssid = "Smart Home Agent";
-	char password[11];
-	srand(time(0));
-	createPassword(&password[0], 10);
+	char password[9];
+	createPassword(&password[0], 8);
 	IPAddress ip(192, 168, 10, 1);
 	this->server->begin(ssid, password ,ip);
 	renderConfigPage(display, ssid, password, ip.toString().c_str());
@@ -72,7 +71,7 @@ const char alphanum[] = "0123456789";
 
 void AgentConfiguration::createPassword(char* password, int len) {
 	for(int i = 0 ; i < len ; i++) {
-		password[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+		password[i] = alphanum[random(sizeof(alphanum) - 1)];
 	}
 	password[len] = '\0';
 }
