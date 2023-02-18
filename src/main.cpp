@@ -67,6 +67,8 @@ void renderWifiPage() {
   }
 }
 
+Timezone tz;
+
 void renderTimePage() {
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
@@ -78,8 +80,6 @@ void renderTimePage() {
   display.setTextAlignment(TEXT_ALIGN_LEFT); */
   
   display.drawLine(0, 12, 127, 12);
-  Timezone tz;
-  tz.setLocation("de");
   char dateString[36];
   char timeString[36];
   sprintf(dateString, "%02d.%02d.%04d", tz.day(), tz.month(), tz.year());
@@ -156,38 +156,31 @@ void output_thread() {
 }
 
 void input_thread() {
-  static enum { RELEASED, PRESSED } status = RELEASED;
-  int button = digitalRead(BUTTON);
-
-  if(status == PRESSED && button == LOW) {
-    // If button was pressed and now is released
-   
-    if(displayOn) {
-      // Switch to next page
-      switch(currentPage) {
-        case HOME_PAGE:
-          currentPage = WIFI_PAGE;
-          break;
-        case WIFI_PAGE:
-          currentPage = TIME_PAGE;
-          break;
-        case TIME_PAGE:
-          currentPage = ELECTRICITY_PAGE;
-          break;
-        default:
-          currentPage = HOME_PAGE;
-          break;
-      }
-    } else {
-      // Activate display and switch to home page
-      displayOn = true;
-      currentPage = HOME_PAGE;
-    }
-    // Reset button pressed timestamp
-    buttonPressedTime = millis();
-  }
-  status = button == HIGH ? PRESSED : RELEASED;
+	buttonPressedTime = millis();
+	if(displayOn) {
+		// Switch to next page
+		switch(currentPage) {
+			case HOME_PAGE:
+				currentPage = WIFI_PAGE;
+				break;
+			case WIFI_PAGE:
+				currentPage = TIME_PAGE;
+				break;
+			case TIME_PAGE:
+				currentPage = ELECTRICITY_PAGE;
+				break;
+			default:
+				currentPage = HOME_PAGE;
+				break;
+		}
+	} else {
+		// Activate display and switch to home page
+		displayOn = true;
+		currentPage = HOME_PAGE;
+	}
 }
+
+SignalStabilizer buttonStabilizer(BUTTON, LOW, 100UL, input_thread);
 
 void measuring_thread() {
   // TODO: Measure current consumption and eliminate flaky signals + send some mqtt messages if nccesary
@@ -211,11 +204,12 @@ void setup_run() {
 	WiFi.begin(configuration.getWiFiSSID(), configuration.getWiFiPassword());
 	Serial.printf("\nStarting WiFi with SSID '%s'.\n\n", configuration.getWiFiSSID());
 
-	// Initialize local time from NTP Server
+	// Initialize local time from NTP Server and set Timezone
 	renderLoadingPage();
 	display.display();
 	Serial.printf("\nStarting time synchronisation...");
 	ezt::waitForSync();
+	tz.setLocation("de");
 	Serial.printf("finished\n\n");
 	display.clear();
 	display.display();
@@ -252,7 +246,7 @@ void setup() {
 void loop_run() {
   digitalWrite(IR_STATUS_LED, !digitalRead(IR_SENSOR));
   digitalWrite(REED_STATUS_LED, digitalRead(REED_CONTACT));
-  input_thread();
+  buttonStabilizer.loop();
   output_thread();
   wifi_thread(&configuration);
 }

@@ -39,6 +39,20 @@ class AgentConfiguration {
 		void loopConfigMode();
 };
 
+class SignalStabilizer {
+	private:
+		unsigned long lastChange;
+		int  lastStatus;
+		bool triggered;
+		unsigned long stabilizationInterval;
+		int inputPin;
+		int triggerStatus;
+		void (*callback)();
+	public:
+		SignalStabilizer(int inputPin, int triggerStatus, unsigned long stabilizationInterval, void (*callback)());
+		void loop();
+};
+
 void wifi_thread(AgentConfiguration* config);
 
 #endif
