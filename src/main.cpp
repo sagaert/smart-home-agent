@@ -1,44 +1,32 @@
-#include <Arduino.h>
-
-#include <WiFi.h>
-#include <time.h>
-
-#include <Wire.h>
-#include <SH1106Wire.h>
-
-#include <Preferences.h>
-
-#define REED_STATUS_LED 25
-#define REED_CONTACT 27
-
-#define IR_STATUS_LED 18                                                                                                                                                                                         
-#define IR_SENSOR 17  
-
-#define BUTTON 26                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
-
-#define TIMEZONE PSTR("CET-1CEST,M3.5.0/02,M10.5.0/03")
+#include <agent.hpp>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
 
 SH1106Wire display(0x3c, SDA, SCL);
 
-String getNameOfDay(int d) {
+String getNameOfDay(uint8_t d) {
   switch(d) {
-    case 0: return "Sonntag";
-    case 1: return "Montag";
-    case 2: return "Dienstag";
-    case 3: return "Mittwoch";
-    case 4: return "Donnerstag";
-    case 5: return "Freitag";
-    case 6: return "Samstag";
+    case SUNDAY: return "Sonntag";
+    case MONDAY: return "Montag";
+    case TUESDAY: return "Dienstag";
+    case WEDNESDAY: return "Mittwoch";
+    case THURSDAY: return "Donnerstag";
+    case FRIDAY: return "Freitag";
+    case SATURDAY: return "Samstag";
     default: return "Unbekannt";
   }
 }
 
-String getNameOfDaylightSavingTime(int dst) {
+String getNameOfDaylightSavingTime(bool dst) {
   if(dst) {
     return "Sommerzeit";
   } else {
     return "Normalzeit";
   }
+}
+
+void renderLoadingPage() {
+  display.setFont(ArialMT_Plain_10);
+  display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
+  display.drawString(64, 32, "Verbinde WLAN und\nsynchronisiere Zeit...");
 }
 
 void renderHomePage() {
@@ -50,7 +38,7 @@ void renderHomePage() {
 void renderWifiPage() {
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(0, 0, "WiFi");
+  display.drawString(0, 0, "WLAN");
   display.drawLine(0, 12, 127, 12);
   switch(WiFi.status()) {
     case WL_CONNECTED:
@@ -64,7 +52,7 @@ void renderWifiPage() {
       sprintf(wifiChannel, "Kanal: %d", WiFi.channel());
       display.setFont(ArialMT_Plain_10);
       display.setTextAlignment(TEXT_ALIGN_LEFT);
-      display.drawString(0, 15, "Status: Connected");
+      display.drawString(0, 15, "Status: Verbunden");
       display.drawString(0, 27, wifiName);
       display.drawString(0, 39, wifiAddress);
       display.drawString(0, 51, wifiChannel);
@@ -74,7 +62,7 @@ void renderWifiPage() {
     default:
       display.setFont(ArialMT_Plain_10);
       display.setTextAlignment(TEXT_ALIGN_LEFT);
-      display.drawString(0, 15, "Status: Connecting...");
+      display.drawString(0, 15, "Status: Verbinden...");
       break;
   }
 }
@@ -82,23 +70,27 @@ void renderWifiPage() {
 void renderTimePage() {
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(0, 0, "Time");
+  display.drawString(0, 0, "Zeit");
+
+  // Super hack for generating an extended RFC3339 string based on UTC
+/*  display.setTextAlignment(TEXT_ALIGN_RIGHT);
+  display.drawString(127, 0, UTC.dateTime(RFC3339_EXT));
+  display.setTextAlignment(TEXT_ALIGN_LEFT); */
+  
   display.drawLine(0, 12, 127, 12);
-  time_t now_t;
-  time(&now_t);
-  tm now;
-  localtime_r(&now_t, &now);
+  Timezone tz;
+  tz.setLocation("de");
   char dateString[36];
   char timeString[36];
-  sprintf(dateString, "%02d.%02d.%04d", now.tm_mday, now.tm_mon + 1, now.tm_year + 1900);
-  sprintf(timeString, "%02d:%02d:%02d", now.tm_hour, now.tm_min, now.tm_sec);
+  sprintf(dateString, "%02d.%02d.%04d", tz.day(), tz.month(), tz.year());
+  sprintf(timeString, "%02d:%02d:%02d", tz.hour(), tz.minute(), tz.second());
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(0, 15, getNameOfDay(now.tm_wday));
-  display.drawString(0, 45, "CET");
+  display.drawString(0, 15, getNameOfDay(tz.weekday()));
+  display.drawString(0, 45, tz.getTimezoneName());
   display.setTextAlignment(TEXT_ALIGN_RIGHT);
   display.drawString(127, 15, dateString);
-  display.drawString(127, 45, getNameOfDaylightSavingTime(now.tm_isdst));
+  display.drawString(127, 45, getNameOfDaylightSavingTime(tz.isDST()));
   display.setFont(ArialMT_Plain_16);
   display.drawString(127, 27, timeString);
 }
@@ -106,7 +98,7 @@ void renderTimePage() {
 void renderElectricityPage() {
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(0, 0, "Electricity");
+  display.drawString(0, 0, "Stromverbrauch");
   display.drawLine(0, 12, 127, 12);
 }
 
@@ -217,44 +209,75 @@ void measuring_thread() {
   // TODO: Measure current consumption and eliminate flaky signals + send some mqtt messages if nccesary
 }
 
-void setup() {
-  Serial.begin(115200);
+enum ProgramMode {
+	RUN,
+	CONFIG
+};
 
-  // Read preferences
-  Preferences wifi, ntp, mqtt;
-  wifi.begin("wifi", true);
-  ntp.begin("ntp", true);
-  mqtt.begin("mqtt", true);
+ProgramMode currentProgramMode = RUN;
 
-  // Initialize pin modes
-  pinMode(REED_STATUS_LED, OUTPUT);
-  pinMode(IR_STATUS_LED, OUTPUT);
-  pinMode(REED_CONTACT, INPUT);
-  pinMode(IR_SENSOR, INPUT);
-  pinMode(BUTTON, INPUT);
+AgentConfiguration configuration;
 
-  // Initialize WiFi
-  char ssid[32];
-  char password[64];
-  wifi.getString("ssid", ssid, 31);
-  wifi.getString("password", password, 63);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+void setup_run() {
+	// Load configuration
+	configuration.load();
 
-   // Initialize OLED display
-  display.init();
-  display.flipScreenVertically();
+	// Initialize WiFi
+	WiFi.mode(WIFI_STA);
+	WiFi.begin(configuration.getWiFiSSID(), configuration.getWiFiPassword());
+	Serial.printf("\nStarting WiFi with SSID '%s'.\n\n", configuration.getWiFiSSID());
 
-  // Initialize local time from NTP Server
-  char ntp_hostname[32];
-  ntp.getString("hostname", ntp_hostname, 31);
-//  configTzTime(TIMEZONE, ntp_hostname);
-  configTzTime(TIMEZONE, "pool.ntp.org");
+	// Initialize local time from NTP Server
+	renderLoadingPage();
+	display.display();
+	Serial.printf("\nStarting time synchronisation...");
+	ezt::waitForSync();
+	Serial.printf("finished\n\n");
+	display.clear();
+	display.display();
 }
 
-void loop() {
+void setup() {
+	Serial.begin(115200);
+
+	// Initialize pin modes
+	pinMode(REED_STATUS_LED, OUTPUT);
+	pinMode(IR_STATUS_LED, OUTPUT);
+	pinMode(REED_CONTACT, INPUT);
+	pinMode(IR_SENSOR, INPUT);
+	pinMode(BUTTON, INPUT);
+
+	// Initialize OLED display
+	display.init();
+	display.flipScreenVertically();
+
+	// Check wich mode to start
+	if(digitalRead(BUTTON) == HIGH) {
+		currentProgramMode = CONFIG;
+	}
+
+	// Setup the startet mode
+	if(currentProgramMode == RUN)  {
+		setup_run();
+	}
+	if(currentProgramMode == CONFIG)  {
+		configuration.setupConfigMode(&display);
+	}
+}
+
+void loop_run() {
   digitalWrite(IR_STATUS_LED, !digitalRead(IR_SENSOR));
   digitalWrite(REED_STATUS_LED, digitalRead(REED_CONTACT));
   input_thread();
   output_thread();
+}
+
+void loop() {
+  // Loop the started mode
+  if(currentProgramMode == RUN)  {
+	loop_run();
+  }
+  if(currentProgramMode == CONFIG)  {
+	configuration.loopConfigMode();
+  }
 }
