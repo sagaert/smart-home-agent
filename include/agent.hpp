@@ -39,4 +39,6 @@ class AgentConfiguration {
 		void loopConfigMode();
 };
 
+void wifi_thread(AgentConfiguration* config);
+
 #endif

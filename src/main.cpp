@@ -189,22 +189,6 @@ void input_thread() {
   status = button == HIGH ? PRESSED : RELEASED;
 }
 
-void wifi_thread() {
-  // TODO: Checking connection and reconnect automatically after some time if neccesary
-  /*
-  do {
-    Serial.print("Connecting WLAN");
-    WiFi.begin(wifi.getString("ssid"), wifi.getString("key"));
-    for(int i = 0 ; i < 30 && WiFi.status() != WL_CONNECTED; i++) {
-      Serial.print(".");
-      delay(1000);    
-    }
-    if(WiFi.status() != WL_CONNECTED) {
-      WiFi.disconnect();
-    }
-  } while(WiFi.status() != WL_CONNECTED); */
-}
-
 void measuring_thread() {
   // TODO: Measure current consumption and eliminate flaky signals + send some mqtt messages if nccesary
 }
@@ -270,6 +254,7 @@ void loop_run() {
   digitalWrite(REED_STATUS_LED, digitalRead(REED_CONTACT));
   input_thread();
   output_thread();
+  wifi_thread(&configuration);
 }
 
 void loop() {
