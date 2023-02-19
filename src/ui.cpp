@@ -1,100 +1,95 @@
 #include <agent.hpp>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
 
-
-SH1106Wire display(0x3c, SDA, SCL);
-
-static boolean displayOn = false;
-enum pages { HOME_PAGE, WIFI_PAGE, TIME_PAGE, ELECTRICITY_PAGE };
-static pages currentPage = HOME_PAGE;
-static unsigned long buttonPressedTime = 0;
-static const unsigned long screensaverTimeout = 60000UL; // Switch off display after 1 minute without input
-const unsigned long displayRefreshInterval = 100UL; // Refresh the display 10 times a second
-
-SH1106Wire* getDisplay() {
-	return &display;
+UserInterface::UserInterface(int displayAddress, int buttonPin, unsigned long screensaverTimeout, unsigned long displayRefreshInterval, unsigned long buttonStabilizerInterval) :
+	buttonStabilizer(SignalStabilizer(buttonPin, LOW, buttonStabilizerInterval, std::bind(&UserInterface::buttonPressed, this))),
+	display(SH1106Wire(displayAddress, SDA, SCL)),
+	screensaverTimeout(screensaverTimeout),
+	displayRefreshInterval(displayRefreshInterval) {
+	this->currentPage = HOME_PAGE;
+	this->displayOn = false;
+	this->buttonPressedTime = 0UL;
+	this->lastRenderingTime = 0UL;
 }
 
-void displayInit() {
-	display.init();
-	display.flipScreenVertically();
+void UserInterface::setup() {
+	this->display.init();
+	this->display.flipScreenVertically();
 }
 
-void showInitMessage() {
+void UserInterface::showInitMessage() {
 	renderLoadingPage(&display);
-	display.display();
+	this->display.display();
 }
 
-void displayOff() {
-	display.clear();
-	display.display();
+void UserInterface::switchDisplayOff() {
+	this->displayOn = false;
 }
 
-void buttonPressed() {
-	buttonPressedTime = millis();
-	if(displayOn) {
+void UserInterface::switchDisplayOn() {
+	this->displayOn = true;
+}
+
+SH1106Wire& UserInterface::getDisplay() {
+	return this->display;
+}
+
+void UserInterface::buttonPressed() {
+	this->buttonPressedTime = millis();
+	if(this->displayOn) {
 		// Switch to next page
-		switch(currentPage) {
+		switch(this->currentPage) {
 			case HOME_PAGE:
-				currentPage = WIFI_PAGE;
+				this->currentPage = WIFI_PAGE;
 				break;
 			case WIFI_PAGE:
-				currentPage = TIME_PAGE;
+				this->currentPage = TIME_PAGE;
 				break;
 			case TIME_PAGE:
-				currentPage = ELECTRICITY_PAGE;
+				this->currentPage = ELECTRICITY_PAGE;
 				break;
 			default:
-				currentPage = HOME_PAGE;
+				this->currentPage = HOME_PAGE;
 				break;
 		}
 	} else {
 		// Activate display and switch to home page
-		displayOn = true;
-		currentPage = HOME_PAGE;
+		this->displayOn = true;
+		this->currentPage = HOME_PAGE;
 	}
 }
 
-void updateDisplay() {
-  static enum { ON, OFF } status = OFF;
-  static unsigned long lastRenderingTimestamp = 0UL;
-  
-  switch(status) {
-    case ON:
-      // Switch display off, if screensaver should be activated
-      displayOn = !(millis() - buttonPressedTime > screensaverTimeout);
-      if(displayOn) {
-        if(millis() - lastRenderingTimestamp > displayRefreshInterval) {
-          // Update display
-          display.clear();
-          switch(currentPage) {
-            case WIFI_PAGE:
-              renderWifiPage(&display);
-              break;
-            case TIME_PAGE:
-              renderTimePage(&display);
-              break;
-            case ELECTRICITY_PAGE:
-              renderElectricityPage(&display);
-              break;
-            default:
-              renderHomePage(&display);
-              break;
-          }
-          display.display();
-          lastRenderingTimestamp = millis();
-        }
-      } else {
-        // Switch off display
-		displayOff();
-        status = OFF;
-      }
-      break;
-    case OFF:
-      if(displayOn) {
-        // Swtich on display
-        status = ON;
-      }
-      break;
-  }
-  
+void UserInterface::loop() {
+	unsigned long now = millis();
+
+	// Loop the input thread
+	this->buttonStabilizer.loop();
+
+	// Switch display off, if screensaver should be activated
+    this->displayOn = !(now - this->buttonPressedTime > this->screensaverTimeout);
+
+	// Update display only when refresh interval is reached
+    if(now - this->lastRenderingTime > this->displayRefreshInterval) {
+		if(this->displayOn) {
+			// Update display
+			this->display.clear();
+			switch(this->currentPage) {
+				case WIFI_PAGE:
+					renderWifiPage(&this->display);
+					break;
+				case TIME_PAGE:
+					renderTimePage(&this->display);
+					break;
+				case ELECTRICITY_PAGE:
+					renderElectricityPage(&this->display);
+					break;
+				default:
+					renderHomePage(&this->display);
+					break;
+			}
+			this->display.display();
+		} else {
+			this->display.clear();
+			this->display.display();
+		}
+	}
 }

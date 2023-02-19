@@ -1,6 +1,6 @@
 #include <agent.hpp>
 
-SignalStabilizer::SignalStabilizer(int inputPin, int triggerStatus, unsigned long stabilizationInterval, void (*callback)()) :
+SignalStabilizer::SignalStabilizer(int inputPin, int triggerStatus, unsigned long stabilizationInterval, std::function<void(void)> callback) :
 	inputPin(inputPin), triggerStatus(triggerStatus), stabilizationInterval(stabilizationInterval), callback(callback) {
 	this->lastStatus = digitalRead(inputPin);
 	this->lastChange = millis();
@@ -17,7 +17,9 @@ void SignalStabilizer::loop() {
 	} else {
 		bool shouldTrigger = currentStatus == this->triggerStatus && now - this->stabilizationInterval > this->lastChange;
 		if(!triggered && shouldTrigger) {
-			this->callback();
+			if(this->callback != 0) {
+				this->callback();
+			}
 			this->triggered = true;
 		}
 	}

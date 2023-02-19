@@ -9,11 +9,19 @@
 #include <Preferences.h>
 #include <esp32-config-lib.hpp>
 
+#define VERSION "0.0.0"
+
 #define REED_STATUS_LED 25
 #define REED_CONTACT 27
 #define IR_STATUS_LED 18                                                                                                                                                                                         
 #define IR_SENSOR 17  
-#define BUTTON 26                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+#define BUTTON_PIN 26                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+#define DISPLAY_ADDRESS 0x3c
+
+class UserInterface;
+class AgtentConfiguration;
+class SignalStabilizer;
+enum Page {	HOME_PAGE, WIFI_PAGE, TIME_PAGE, ELECTRICITY_PAGE, GAS_PAGE };
 
 class AgentConfiguration {
 	private:
@@ -24,7 +32,7 @@ class AgentConfiguration {
 		char mqttUsername[64];
 		char mqttPassword[64];
 		char mqttTopic[64];
-		void renderConfigPage(SH1106Wire* display, const char* ssid, const char* password, const char* ip);
+		void renderConfigPage(SH1106Wire& display, const char* ssid, const char* password, const char* ip);
 		void createPassword(char* password, int len);
 	public:
 		AgentConfiguration();
@@ -35,7 +43,7 @@ class AgentConfiguration {
 		char* getMQTTPassword();
 		char* getMQTTTopic();
 		void load();
-		void setupConfigMode();
+		void setupConfigMode(UserInterface& ui);
 		void loopConfigMode();
 };
 
@@ -47,20 +55,34 @@ class SignalStabilizer {
 		unsigned long stabilizationInterval;
 		int inputPin;
 		int triggerStatus;
-		void (*callback)();
+		std::function<void(void)> callback;
 	public:
-		SignalStabilizer(int inputPin, int triggerStatus, unsigned long stabilizationInterval, void (*callback)());
+		SignalStabilizer(int inputPin, int triggerStatus, unsigned long stabilizationInterval, std::function<void(void)> callback);
 		void loop();
 };
 
-void wifi_thread(AgentConfiguration* config);
+class UserInterface {
+	private:
+		SH1106Wire display;
+		SignalStabilizer buttonStabilizer;
+		const unsigned long screensaverTimeout;
+		const unsigned long displayRefreshInterval;
+		Page currentPage;
+		bool displayOn;
+		unsigned long buttonPressedTime;
+		unsigned long lastRenderingTime;
+		void buttonPressed();
+	public:
+		UserInterface(int displayAddress, int buttonPin, unsigned long screensaverTimeout = 60000UL, unsigned long displayRefreshInterval = 100UL, unsigned long buttonStabilizerInterval = 100UL);
+		void loop();
+		void setup();
+		void showInitMessage();
+		void switchDisplayOff();
+		void switchDisplayOn();
+		SH1106Wire& getDisplay();
+};
 
-SH1106Wire* getDisplay();
-void displayInit();
-void displayOff();
-void showInitMessage();
-void updateDisplay();
-void buttonPressed();
+void wifi_thread(AgentConfiguration* config);
 
 void initTimezone();
 void renderLoadingPage(SH1106Wire* display);

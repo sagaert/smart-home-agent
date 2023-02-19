@@ -1,8 +1,8 @@
 #include <agent.hpp>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
 
-SignalStabilizer buttonStabilizer(BUTTON, LOW, 100UL, buttonPressed);
-
 AgentConfiguration configuration;
+
+UserInterface ui(DISPLAY_ADDRESS, BUTTON_PIN);
 
 enum ProgramMode {
 	RUN,
@@ -21,12 +21,12 @@ void setup_run() {
 	Serial.printf("\nStarting WiFi with SSID '%s'.\n\n", configuration.getWiFiSSID());
 
 	// Initialize local time from NTP Server and set Timezone
-	showInitMessage();
+	ui.showInitMessage();
 	Serial.printf("\nStarting time synchronisation...");
 	ezt::waitForSync();
 	initTimezone();
 	Serial.printf("finished\n\n");
-	displayOff();
+	ui.switchDisplayOff();
 }
 
 void setup() {
@@ -37,13 +37,13 @@ void setup() {
 	pinMode(IR_STATUS_LED, OUTPUT);
 	pinMode(REED_CONTACT, INPUT);
 	pinMode(IR_SENSOR, INPUT);
-	pinMode(BUTTON, INPUT);
+	pinMode(BUTTON_PIN, INPUT);
 
-	// Initialize OLED display
-	displayInit();
+	// Initialize UI
+	ui.setup();
 
 	// Check wich mode to start
-	if(digitalRead(BUTTON) == HIGH) {
+	if(digitalRead(BUTTON_PIN) == HIGH) {
 		currentProgramMode = CONFIG;
 	}
 
@@ -52,15 +52,14 @@ void setup() {
 		setup_run();
 	}
 	if(currentProgramMode == CONFIG)  {
-		configuration.setupConfigMode();
+		configuration.setupConfigMode(ui);
 	}
 }
 
 void loop_run() {
   digitalWrite(IR_STATUS_LED, !digitalRead(IR_SENSOR));
   digitalWrite(REED_STATUS_LED, digitalRead(REED_CONTACT));
-  buttonStabilizer.loop();
-  updateDisplay();
+  ui.loop();
   wifi_thread(&configuration);
 }
 
