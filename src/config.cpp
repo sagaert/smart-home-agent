@@ -45,7 +45,7 @@ void AgentConfiguration::load() {
 	mqtt.getString("topic", this->mqttURL, 63);
 }
 
-void AgentConfiguration::setupConfigMode(SH1106Wire* display) {
+void AgentConfiguration::setupConfigMode(UserInterface& ui) {
 	esp32config::Configuration config("SHO Config", {
 			new esp32config::Namespace("WiFi", "wifi", {
 				new esp32config::Entry("SSID", esp32config::TEXT, "ssid"),
@@ -59,46 +59,24 @@ void AgentConfiguration::setupConfigMode(SH1106Wire* display) {
 			})}
 		);
 	this->server = new esp32config::Server(config);
-	const char* ssid = "Smart Home Agent";
-	char password[9];
-	createPassword(&password[0], 8);
+	std::string ssid = "Smart Home Agent";
+	std::string password = createPassword(8);
 	IPAddress ip(192, 168, 10, 1);
 	this->server->begin(ssid, password ,ip);
-	renderConfigPage(display, ssid, password, ip.toString().c_str());
+	ui.showConfigMessage(ssid.c_str(), password.c_str(), ip.toString().c_str());
 }
 
 const char alphanum[] = "0123456789";
 
-void AgentConfiguration::createPassword(char* password, int len) {
+std::string AgentConfiguration::createPassword(int len) {
+	char *password = new char[len+1];
 	for(int i = 0 ; i < len ; i++) {
 		password[i] = alphanum[random(sizeof(alphanum) - 1)];
 	}
 	password[len] = '\0';
+	return std::string(password);
 }
 
 void AgentConfiguration::loopConfigMode() {
 	this->server->loop();
-}
-
-void AgentConfiguration::renderConfigPage(SH1106Wire* display, const char* ssid, const char* password, const char* ip) {
-	display->clear();
-
-	display->setFont(ArialMT_Plain_10);
-	display->setTextAlignment(TEXT_ALIGN_LEFT);
-	display->drawString(0, 0, "Konfigurations-Modus");
-	display->drawLine(0, 12, 127, 12);
-
-	char configSSID[32];
-	char configPassword[32];
-	char configIP[32];
-    sprintf(configSSID, "SSID: %s", ssid);
-    sprintf(configPassword, "Password: %s", password);
-    sprintf(configIP, "http://%s", ip);
-
-	display->drawString(0, 15, "Verbindungsdaten:");
-	display->drawString(0, 27, configSSID);
-	display->drawString(0, 39, configPassword);
-	display->drawString(0, 51, configIP);
-
-	display->display();
 }

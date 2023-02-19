@@ -1,213 +1,10 @@
 #include <agent.hpp>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
 
-SH1106Wire display(0x3c, SDA, SCL);
+AgentConfiguration configuration;
 
-String getNameOfDay(uint8_t d) {
-  switch(d) {
-    case SUNDAY: return "Sonntag";
-    case MONDAY: return "Montag";
-    case TUESDAY: return "Dienstag";
-    case WEDNESDAY: return "Mittwoch";
-    case THURSDAY: return "Donnerstag";
-    case FRIDAY: return "Freitag";
-    case SATURDAY: return "Samstag";
-    default: return "Unbekannt";
-  }
-}
+UserInterface ui(DISPLAY_ADDRESS, BUTTON_PIN);
 
-String getNameOfDaylightSavingTime(bool dst) {
-  if(dst) {
-    return "Sommerzeit";
-  } else {
-    return "Normalzeit";
-  }
-}
-
-void renderLoadingPage() {
-  display.setFont(ArialMT_Plain_10);
-  display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
-  display.drawString(64, 32, "Verbinde WLAN und\nsynchronisiere Zeit...");
-}
-
-void renderHomePage() {
-  display.setFont(ArialMT_Plain_24);
-  display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
-  display.drawString(64, 32, "Welcome");
-}
-
-void renderWifiPage() {
-  display.setFont(ArialMT_Plain_10);
-  display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(0, 0, "WLAN");
-  display.drawLine(0, 12, 127, 12);
-  switch(WiFi.status()) {
-    case WL_CONNECTED:
-      char wifiName[32];
-      char wifiAddress[32];
-      char signalStrength[32];
-      char wifiChannel[16];
-      sprintf(wifiName, "SSID: %s", WiFi.SSID().c_str());
-      sprintf(wifiAddress, "IP: %s", WiFi.localIP().toString().c_str());
-      sprintf(signalStrength, "Signal: %d%%", (WiFi.RSSI() + 100)* 2 );
-      sprintf(wifiChannel, "Kanal: %d", WiFi.channel());
-      display.setFont(ArialMT_Plain_10);
-      display.setTextAlignment(TEXT_ALIGN_LEFT);
-      display.drawString(0, 15, "Status: Verbunden");
-      display.drawString(0, 27, wifiName);
-      display.drawString(0, 39, wifiAddress);
-      display.drawString(0, 51, wifiChannel);
-      display.setTextAlignment(TEXT_ALIGN_RIGHT);
-      display.drawString(127, 51, signalStrength);
-      break;
-    default:
-      display.setFont(ArialMT_Plain_10);
-      display.setTextAlignment(TEXT_ALIGN_LEFT);
-      display.drawString(0, 15, "Status: Verbinden...");
-      break;
-  }
-}
-
-void renderTimePage() {
-  display.setFont(ArialMT_Plain_10);
-  display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(0, 0, "Zeit");
-
-  // Super hack for generating an extended RFC3339 string based on UTC
-/*  display.setTextAlignment(TEXT_ALIGN_RIGHT);
-  display.drawString(127, 0, UTC.dateTime(RFC3339_EXT));
-  display.setTextAlignment(TEXT_ALIGN_LEFT); */
-  
-  display.drawLine(0, 12, 127, 12);
-  Timezone tz;
-  tz.setLocation("de");
-  char dateString[36];
-  char timeString[36];
-  sprintf(dateString, "%02d.%02d.%04d", tz.day(), tz.month(), tz.year());
-  sprintf(timeString, "%02d:%02d:%02d", tz.hour(), tz.minute(), tz.second());
-  display.setFont(ArialMT_Plain_10);
-  display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(0, 15, getNameOfDay(tz.weekday()));
-  display.drawString(0, 45, tz.getTimezoneName());
-  display.setTextAlignment(TEXT_ALIGN_RIGHT);
-  display.drawString(127, 15, dateString);
-  display.drawString(127, 45, getNameOfDaylightSavingTime(tz.isDST()));
-  display.setFont(ArialMT_Plain_16);
-  display.drawString(127, 27, timeString);
-}
-
-void renderElectricityPage() {
-  display.setFont(ArialMT_Plain_10);
-  display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(0, 0, "Stromverbrauch");
-  display.drawLine(0, 12, 127, 12);
-}
-
-static boolean displayOn = false;
-enum pages { HOME_PAGE, WIFI_PAGE, TIME_PAGE, ELECTRICITY_PAGE };
-static pages currentPage = HOME_PAGE;
-static unsigned long buttonPressedTime = 0;
-static const unsigned long screensaverTimeout = 60000UL; // Switch off display after 1 minute without input
-const unsigned long displayRefreshInterval = 100UL; // Refresh the display 10 times a second
-
-void output_thread() {
-  static enum { ON, OFF } status = OFF;
-  static unsigned long lastRenderingTimestamp = 0UL;
-  
-  switch(status) {
-    case ON:
-      // Switch display off, if screensaver should be activated
-      displayOn = !(millis() - buttonPressedTime > screensaverTimeout);
-      if(displayOn) {
-        if(millis() - lastRenderingTimestamp > displayRefreshInterval) {
-          // Update display
-          display.clear();
-          switch(currentPage) {
-            case WIFI_PAGE:
-              renderWifiPage();
-              break;
-            case TIME_PAGE:
-              renderTimePage();
-              break;
-            case ELECTRICITY_PAGE:
-              renderElectricityPage();
-              break;
-            default:
-              renderHomePage();
-              break;
-          }
-          display.display();
-          lastRenderingTimestamp = millis();
-        }
-      } else {
-        // Switch off display
-        display.clear();
-        display.display();
-        status = OFF;
-      }
-      break;
-    case OFF:
-      if(displayOn) {
-        // Swtich on display
-        status = ON;
-      }
-      break;
-  }
-  
-}
-
-void input_thread() {
-  static enum { RELEASED, PRESSED } status = RELEASED;
-  int button = digitalRead(BUTTON);
-
-  if(status == PRESSED && button == LOW) {
-    // If button was pressed and now is released
-   
-    if(displayOn) {
-      // Switch to next page
-      switch(currentPage) {
-        case HOME_PAGE:
-          currentPage = WIFI_PAGE;
-          break;
-        case WIFI_PAGE:
-          currentPage = TIME_PAGE;
-          break;
-        case TIME_PAGE:
-          currentPage = ELECTRICITY_PAGE;
-          break;
-        default:
-          currentPage = HOME_PAGE;
-          break;
-      }
-    } else {
-      // Activate display and switch to home page
-      displayOn = true;
-      currentPage = HOME_PAGE;
-    }
-    // Reset button pressed timestamp
-    buttonPressedTime = millis();
-  }
-  status = button == HIGH ? PRESSED : RELEASED;
-}
-
-void wifi_thread() {
-  // TODO: Checking connection and reconnect automatically after some time if neccesary
-  /*
-  do {
-    Serial.print("Connecting WLAN");
-    WiFi.begin(wifi.getString("ssid"), wifi.getString("key"));
-    for(int i = 0 ; i < 30 && WiFi.status() != WL_CONNECTED; i++) {
-      Serial.print(".");
-      delay(1000);    
-    }
-    if(WiFi.status() != WL_CONNECTED) {
-      WiFi.disconnect();
-    }
-  } while(WiFi.status() != WL_CONNECTED); */
-}
-
-void measuring_thread() {
-  // TODO: Measure current consumption and eliminate flaky signals + send some mqtt messages if nccesary
-}
+ConnectionManager connectionManager;
 
 enum ProgramMode {
 	RUN,
@@ -215,8 +12,6 @@ enum ProgramMode {
 };
 
 ProgramMode currentProgramMode = RUN;
-
-AgentConfiguration configuration;
 
 void setup_run() {
 	// Load configuration
@@ -227,14 +22,13 @@ void setup_run() {
 	WiFi.begin(configuration.getWiFiSSID(), configuration.getWiFiPassword());
 	Serial.printf("\nStarting WiFi with SSID '%s'.\n\n", configuration.getWiFiSSID());
 
-	// Initialize local time from NTP Server
-	renderLoadingPage();
-	display.display();
+	// Initialize local time from NTP Server and set Timezone
+	ui.showInitMessage();
 	Serial.printf("\nStarting time synchronisation...");
 	ezt::waitForSync();
+	ui.setTimezone();
 	Serial.printf("finished\n\n");
-	display.clear();
-	display.display();
+	ui.switchDisplayOff();
 }
 
 void setup() {
@@ -245,14 +39,13 @@ void setup() {
 	pinMode(IR_STATUS_LED, OUTPUT);
 	pinMode(REED_CONTACT, INPUT);
 	pinMode(IR_SENSOR, INPUT);
-	pinMode(BUTTON, INPUT);
+	pinMode(BUTTON_PIN, INPUT);
 
-	// Initialize OLED display
-	display.init();
-	display.flipScreenVertically();
+	// Initialize UI
+	ui.setup();
 
 	// Check wich mode to start
-	if(digitalRead(BUTTON) == HIGH) {
+	if(digitalRead(BUTTON_PIN) == HIGH) {
 		currentProgramMode = CONFIG;
 	}
 
@@ -261,15 +54,15 @@ void setup() {
 		setup_run();
 	}
 	if(currentProgramMode == CONFIG)  {
-		configuration.setupConfigMode(&display);
+		configuration.setupConfigMode(ui);
 	}
 }
 
 void loop_run() {
   digitalWrite(IR_STATUS_LED, !digitalRead(IR_SENSOR));
   digitalWrite(REED_STATUS_LED, digitalRead(REED_CONTACT));
-  input_thread();
-  output_thread();
+  ui.loop();
+  connectionManager.loop(configuration);
 }
 
 void loop() {
