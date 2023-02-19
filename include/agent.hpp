@@ -39,8 +39,16 @@ class ConnectionManager {
 
 class PageRenderer {
 	private:
+		std::string getNameOfDay(uint8_t d);
+		std::string getNameOfDaylightSavingTime(bool dst);
 	public:
 		PageRenderer();
+		void renderHomePage(SH1106Wire& display);
+		void renderWifiPage(SH1106Wire& display);
+		void renderTimePage(SH1106Wire& display, Timezone& timezone);
+		void renderElectricityPage(SH1106Wire& display);
+		void renderLoadingPage(SH1106Wire& display);
+		void renderConfigPage(SH1106Wire& display, const char* ssid, const char* password, const char* ip);
 };
 
 class AgentConfiguration {
@@ -52,7 +60,7 @@ class AgentConfiguration {
 		char mqttUsername[64];
 		char mqttPassword[64];
 		char mqttTopic[64];
-		void createPassword(char* password, int len);
+		std::string createPassword(int len);
 	public:
 		AgentConfiguration();
 		char* getWiFiSSID();
@@ -85,6 +93,7 @@ class UserInterface {
 		SH1106Wire display;
 		SignalStabilizer buttonStabilizer;
 		Timezone timezone;
+		PageRenderer renderer;
 		const unsigned long screensaverTimeout;
 		const unsigned long displayRefreshInterval;
 		Page currentPage;
@@ -102,12 +111,5 @@ class UserInterface {
 		void showInitMessage();
 		void showConfigMessage(const char* ssid, const char* password, const char* ip);
 };
-
-void renderHomePage(SH1106Wire& display);
-void renderWifiPage(SH1106Wire& display);
-void renderTimePage(SH1106Wire& display, Timezone& timezone);
-void renderElectricityPage(SH1106Wire& display);
-void renderLoadingPage(SH1106Wire& display);
-void renderConfigPage(SH1106Wire& display, const char* ssid, const char* password, const char* ip);
 
 #endif

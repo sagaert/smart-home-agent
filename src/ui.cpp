@@ -18,16 +18,15 @@ void UserInterface::setup() {
 
 void UserInterface::showInitMessage() {
 	this->display.clear();
-	renderLoadingPage(this->display);
+	this->renderer.renderLoadingPage(this->display);
 	this->display.display();
 }
 
 void UserInterface::showConfigMessage(const char* ssid, const char* password, const char* ip) {
 	this->display.clear();
-	renderConfigPage(this->display, ssid, password, ip);
+	this->renderer.renderConfigPage(this->display, ssid, password, ip);
 	this->display.display();
 }
-
 
 void UserInterface::switchDisplayOff() {
 	this->displayOn = false;
@@ -82,16 +81,16 @@ void UserInterface::loop() {
 			// Update display
 			switch(this->currentPage) {
 				case WIFI_PAGE:
-					renderWifiPage(this->display);
+					this->renderer.renderWifiPage(this->display);
 					break;
 				case TIME_PAGE:
-					renderTimePage(this->display, this->timezone);
+					this->renderer.renderTimePage(this->display, this->timezone);
 					break;
 				case ELECTRICITY_PAGE:
-					renderElectricityPage(this->display);
+					this->renderer.renderElectricityPage(this->display);
 					break;
 				default:
-					renderHomePage(this->display);
+					this->renderer.renderHomePage(this->display);
 					break;
 			}
 		}

@@ -1,6 +1,8 @@
 #include <agent.hpp>
 
-String getNameOfDay(uint8_t d) {
+PageRenderer::PageRenderer() {}
+
+std::string PageRenderer::getNameOfDay(uint8_t d) {
 	switch(d) {
 		case SUNDAY: return "Sonntag";
 		case MONDAY: return "Montag";
@@ -13,7 +15,7 @@ String getNameOfDay(uint8_t d) {
 	}
 }
 
-String getNameOfDaylightSavingTime(bool dst) {
+std::string PageRenderer::getNameOfDaylightSavingTime(bool dst) {
 	if(dst) {
 		return "Sommerzeit";
 	} else {
@@ -21,19 +23,19 @@ String getNameOfDaylightSavingTime(bool dst) {
 	}
 }
 
-void renderLoadingPage(SH1106Wire& display) {
+void PageRenderer::renderLoadingPage(SH1106Wire& display) {
 	display.setFont(ArialMT_Plain_10);
 	display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
 	display.drawString(64, 32, "Verbinde WLAN und\nsynchronisiere Zeit...");
 }
 
-void renderHomePage(SH1106Wire& display) {
+void PageRenderer::renderHomePage(SH1106Wire& display) {
 	display.setFont(ArialMT_Plain_24);
 	display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
 	display.drawString(64, 32, "Welcome");
 }
 
-void renderWifiPage(SH1106Wire& display) {
+void PageRenderer::renderWifiPage(SH1106Wire& display) {
 	display.setFont(ArialMT_Plain_10);
 	display.setTextAlignment(TEXT_ALIGN_LEFT);
 	display.drawString(0, 0, "WLAN");
@@ -65,7 +67,7 @@ void renderWifiPage(SH1106Wire& display) {
 	}
 }
 
-void renderTimePage(SH1106Wire& display, Timezone& timezone) {
+void PageRenderer::renderTimePage(SH1106Wire& display, Timezone& timezone) {
 	display.setFont(ArialMT_Plain_10);
 	display.setTextAlignment(TEXT_ALIGN_LEFT);
 	display.drawString(0, 0, "Zeit");
@@ -76,23 +78,23 @@ void renderTimePage(SH1106Wire& display, Timezone& timezone) {
 	sprintf(timeString, "%02d:%02d:%02d", timezone.hour(), timezone.minute(), timezone.second());
 	display.setFont(ArialMT_Plain_10);
 	display.setTextAlignment(TEXT_ALIGN_LEFT);
-	display.drawString(0, 15, getNameOfDay(timezone.weekday()));
+	display.drawString(0, 15, this->getNameOfDay(timezone.weekday()).c_str());
 	display.drawString(0, 45, timezone.getTimezoneName());
 	display.setTextAlignment(TEXT_ALIGN_RIGHT);
 	display.drawString(127, 15, dateString);
-	display.drawString(127, 45, getNameOfDaylightSavingTime(timezone.isDST()));
+	display.drawString(127, 45, this->getNameOfDaylightSavingTime(timezone.isDST()).c_str());
 	display.setFont(ArialMT_Plain_16);
 	display.drawString(127, 27, timeString);
 }
 
-void renderElectricityPage(SH1106Wire& display) {
+void PageRenderer::renderElectricityPage(SH1106Wire& display) {
 	display.setFont(ArialMT_Plain_10);
 	display.setTextAlignment(TEXT_ALIGN_LEFT);
 	display.drawString(0, 0, "Stromverbrauch");
 	display.drawLine(0, 12, 127, 12);
 }
 
-void renderConfigPage(SH1106Wire& display, const char* ssid, const char* password, const char* ip) {
+void PageRenderer::renderConfigPage(SH1106Wire& display, const char* ssid, const char* password, const char* ip) {
 	display.setFont(ArialMT_Plain_10);
 	display.setTextAlignment(TEXT_ALIGN_LEFT);
 	display.drawString(0, 0, "Konfigurations-Modus");

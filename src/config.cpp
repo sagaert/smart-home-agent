@@ -59,21 +59,22 @@ void AgentConfiguration::setupConfigMode(UserInterface& ui) {
 			})}
 		);
 	this->server = new esp32config::Server(config);
-	const char* ssid = "Smart Home Agent";
-	char password[9];
-	createPassword(&password[0], 8);
+	std::string ssid = "Smart Home Agent";
+	std::string password = createPassword(8);
 	IPAddress ip(192, 168, 10, 1);
 	this->server->begin(ssid, password ,ip);
-	ui.showConfigMessage(ssid, password, ip.toString().c_str());
+	ui.showConfigMessage(ssid.c_str(), password.c_str(), ip.toString().c_str());
 }
 
 const char alphanum[] = "0123456789";
 
-void AgentConfiguration::createPassword(char* password, int len) {
+std::string AgentConfiguration::createPassword(int len) {
+	char *password = new char[len+1];
 	for(int i = 0 ; i < len ; i++) {
 		password[i] = alphanum[random(sizeof(alphanum) - 1)];
 	}
 	password[len] = '\0';
+	return std::string(password);
 }
 
 void AgentConfiguration::loopConfigMode() {
