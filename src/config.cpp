@@ -45,7 +45,7 @@ void AgentConfiguration::load() {
 	mqtt.getString("topic", this->mqttURL, 63);
 }
 
-void AgentConfiguration::setupConfigMode(SH1106Wire* display) {
+void AgentConfiguration::setupConfigMode() {
 	esp32config::Configuration config("SHO Config", {
 			new esp32config::Namespace("WiFi", "wifi", {
 				new esp32config::Entry("SSID", esp32config::TEXT, "ssid"),
@@ -64,7 +64,7 @@ void AgentConfiguration::setupConfigMode(SH1106Wire* display) {
 	createPassword(&password[0], 8);
 	IPAddress ip(192, 168, 10, 1);
 	this->server->begin(ssid, password ,ip);
-	renderConfigPage(display, ssid, password, ip.toString().c_str());
+	renderConfigPage(getDisplay(), ssid, password, ip.toString().c_str());
 }
 
 const char alphanum[] = "0123456789";

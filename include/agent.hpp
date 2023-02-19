@@ -35,7 +35,7 @@ class AgentConfiguration {
 		char* getMQTTPassword();
 		char* getMQTTTopic();
 		void load();
-		void setupConfigMode(SH1106Wire* display);
+		void setupConfigMode();
 		void loopConfigMode();
 };
 
@@ -54,5 +54,19 @@ class SignalStabilizer {
 };
 
 void wifi_thread(AgentConfiguration* config);
+
+SH1106Wire* getDisplay();
+void displayInit();
+void displayOff();
+void showInitMessage();
+void updateDisplay();
+void buttonPressed();
+
+void initTimezone();
+void renderLoadingPage(SH1106Wire* display);
+void renderHomePage(SH1106Wire* display);
+void renderWifiPage(SH1106Wire* display);
+void renderTimePage(SH1106Wire* display);
+void renderElectricityPage(SH1106Wire* display);
 
 #endif

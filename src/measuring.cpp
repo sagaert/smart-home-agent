@@ -22,3 +22,8 @@ void SignalStabilizer::loop() {
 		}
 	}
 }
+
+// Generating an UTC Timestamp in RFC3339 with milliseconds:
+void someMethod() {
+	UTC.dateTime(RFC3339_EXT);
+}
