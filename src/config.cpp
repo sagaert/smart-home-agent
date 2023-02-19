@@ -64,7 +64,7 @@ void AgentConfiguration::setupConfigMode(UserInterface& ui) {
 	createPassword(&password[0], 8);
 	IPAddress ip(192, 168, 10, 1);
 	this->server->begin(ssid, password ,ip);
-	ui.renderConfigPage(ssid, password, ip.toString().c_str());
+	ui.showConfigMessage(ssid, password, ip.toString().c_str());
 }
 
 const char alphanum[] = "0123456789";

@@ -17,9 +17,17 @@ void UserInterface::setup() {
 }
 
 void UserInterface::showInitMessage() {
+	this->display.clear();
 	renderLoadingPage(this->display);
 	this->display.display();
 }
+
+void UserInterface::showConfigMessage(const char* ssid, const char* password, const char* ip) {
+	this->display.clear();
+	renderConfigPage(this->display, ssid, password, ip);
+	this->display.display();
+}
+
 
 void UserInterface::switchDisplayOff() {
 	this->displayOn = false;
@@ -69,9 +77,9 @@ void UserInterface::loop() {
 
 	// Update display only when refresh interval is reached
     if(now - this->lastRenderingTime > this->displayRefreshInterval) {
+		this->display.clear();
 		if(this->displayOn) {
 			// Update display
-			this->display.clear();
 			switch(this->currentPage) {
 				case WIFI_PAGE:
 					renderWifiPage(this->display);
@@ -86,33 +94,8 @@ void UserInterface::loop() {
 					renderHomePage(this->display);
 					break;
 			}
-			this->display.display();
-		} else {
-			this->display.clear();
-			this->display.display();
 		}
+		this->display.display();
 	}
 }
 
-void UserInterface::renderConfigPage(const char* ssid, const char* password, const char* ip) {
-	display.clear();
-
-	display.setFont(ArialMT_Plain_10);
-	display.setTextAlignment(TEXT_ALIGN_LEFT);
-	display.drawString(0, 0, "Konfigurations-Modus");
-	display.drawLine(0, 12, 127, 12);
-
-	char configSSID[32];
-	char configPassword[32];
-	char configIP[32];
-    sprintf(configSSID, "SSID: %s", ssid);
-    sprintf(configPassword, "Password: %s", password);
-    sprintf(configIP, "http://%s", ip);
-
-	display.drawString(0, 15, "Verbindungsdaten:");
-	display.drawString(0, 27, configSSID);
-	display.drawString(0, 39, configPassword);
-	display.drawString(0, 51, configIP);
-
-	display.display();
-}

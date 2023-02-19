@@ -96,17 +96,18 @@ class UserInterface {
 		UserInterface(int displayAddress, int buttonPin, unsigned long screensaverTimeout = 60000UL, unsigned long displayRefreshInterval = 100UL, unsigned long buttonStabilizerInterval = 100UL);
 		void loop();
 		void setup();
-		void showInitMessage();
 		void switchDisplayOff();
 		void switchDisplayOn();
 		void setTimezone();
-		void renderConfigPage(const char* ssid, const char* password, const char* ip);
+		void showInitMessage();
+		void showConfigMessage(const char* ssid, const char* password, const char* ip);
 };
 
-void renderLoadingPage(SH1106Wire& display);
 void renderHomePage(SH1106Wire& display);
 void renderWifiPage(SH1106Wire& display);
 void renderTimePage(SH1106Wire& display, Timezone& timezone);
 void renderElectricityPage(SH1106Wire& display);
+void renderLoadingPage(SH1106Wire& display);
+void renderConfigPage(SH1106Wire& display, const char* ssid, const char* password, const char* ip);
 
 #endif

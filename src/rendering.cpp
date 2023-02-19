@@ -92,3 +92,19 @@ void renderElectricityPage(SH1106Wire& display) {
 	display.drawLine(0, 12, 127, 12);
 }
 
+void renderConfigPage(SH1106Wire& display, const char* ssid, const char* password, const char* ip) {
+	display.setFont(ArialMT_Plain_10);
+	display.setTextAlignment(TEXT_ALIGN_LEFT);
+	display.drawString(0, 0, "Konfigurations-Modus");
+	display.drawLine(0, 12, 127, 12);
+	char configSSID[32];
+	char configPassword[32];
+	char configIP[32];
+    sprintf(configSSID, "SSID: %s", ssid);
+    sprintf(configPassword, "Password: %s", password);
+    sprintf(configIP, "http://%s", ip);
+	display.drawString(0, 15, "Verbindungsdaten:");
+	display.drawString(0, 27, configSSID);
+	display.drawString(0, 39, configPassword);
+	display.drawString(0, 51, configIP);
+}
