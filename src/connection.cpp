@@ -1,20 +1,22 @@
 #include <agent.hpp>
 
-const unsigned long connectionCheckInterval = 180000UL; // Check WiFi-Connection every 3 minutes
+ConnectionManager::ConnectionManager(unsigned long connectionCheckInterval) :
+	connectionCheckInterval(connectionCheckInterval) {
+		this->lastConnectionCheck = 0UL;
+}
 
-void wifi_thread(AgentConfiguration* config) {
-	static enum { ON, OFF } status = OFF;
-	static unsigned long lastConnectionCheck = 0UL;
-	if(millis() - lastConnectionCheck > connectionCheckInterval) {
+void ConnectionManager::loop(AgentConfiguration& config) {
+	unsigned long now = millis();
+	if(now - this->lastConnectionCheck > this->connectionCheckInterval) {
 		Serial.printf("Checking WiFi connection...");
 		if(!WiFi.isConnected()) {
 			Serial.println("not connected! Start reconnect.");
 			WiFi.disconnect();
-			WiFi.begin(config->getWiFiSSID(), config->getWiFiPassword());
+			WiFi.begin(config.getWiFiSSID(), config.getWiFiPassword());
 		} else {
 			Serial.println("connected");
 		}
-		lastConnectionCheck = millis();
+		this->lastConnectionCheck = now;
 	}
 }
 

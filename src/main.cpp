@@ -4,6 +4,8 @@ AgentConfiguration configuration;
 
 UserInterface ui(DISPLAY_ADDRESS, BUTTON_PIN);
 
+ConnectionManager connectionManager;
+
 enum ProgramMode {
 	RUN,
 	CONFIG
@@ -24,7 +26,7 @@ void setup_run() {
 	ui.showInitMessage();
 	Serial.printf("\nStarting time synchronisation...");
 	ezt::waitForSync();
-	initTimezone();
+	ui.setTimezone();
 	Serial.printf("finished\n\n");
 	ui.switchDisplayOff();
 }
@@ -60,7 +62,7 @@ void loop_run() {
   digitalWrite(IR_STATUS_LED, !digitalRead(IR_SENSOR));
   digitalWrite(REED_STATUS_LED, digitalRead(REED_CONTACT));
   ui.loop();
-  wifi_thread(&configuration);
+  connectionManager.loop(configuration);
 }
 
 void loop() {

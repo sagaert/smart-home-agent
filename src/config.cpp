@@ -64,7 +64,7 @@ void AgentConfiguration::setupConfigMode(UserInterface& ui) {
 	createPassword(&password[0], 8);
 	IPAddress ip(192, 168, 10, 1);
 	this->server->begin(ssid, password ,ip);
-	renderConfigPage(ui.getDisplay(), ssid, password, ip.toString().c_str());
+	ui.renderConfigPage(ssid, password, ip.toString().c_str());
 }
 
 const char alphanum[] = "0123456789";
@@ -78,27 +78,4 @@ void AgentConfiguration::createPassword(char* password, int len) {
 
 void AgentConfiguration::loopConfigMode() {
 	this->server->loop();
-}
-
-void AgentConfiguration::renderConfigPage(SH1106Wire& display, const char* ssid, const char* password, const char* ip) {
-	display.clear();
-
-	display.setFont(ArialMT_Plain_10);
-	display.setTextAlignment(TEXT_ALIGN_LEFT);
-	display.drawString(0, 0, "Konfigurations-Modus");
-	display.drawLine(0, 12, 127, 12);
-
-	char configSSID[32];
-	char configPassword[32];
-	char configIP[32];
-    sprintf(configSSID, "SSID: %s", ssid);
-    sprintf(configPassword, "Password: %s", password);
-    sprintf(configIP, "http://%s", ip);
-
-	display.drawString(0, 15, "Verbindungsdaten:");
-	display.drawString(0, 27, configSSID);
-	display.drawString(0, 39, configPassword);
-	display.drawString(0, 51, configIP);
-
-	display.display();
 }

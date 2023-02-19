@@ -18,10 +18,30 @@
 #define BUTTON_PIN 26                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
 #define DISPLAY_ADDRESS 0x3c
 
+#define TIMEZONE "de"
+
 class UserInterface;
-class AgtentConfiguration;
+class AgentConfiguration;
 class SignalStabilizer;
+class PageRenderer;
+class ConnectionManager;
+
 enum Page {	HOME_PAGE, WIFI_PAGE, TIME_PAGE, ELECTRICITY_PAGE, GAS_PAGE };
+
+class ConnectionManager {
+	private:
+		unsigned long lastConnectionCheck;
+		const unsigned long connectionCheckInterval;
+	public:
+		ConnectionManager(unsigned long connectionCheckInterval = 180000UL);
+		void loop(AgentConfiguration& config);
+};
+
+class PageRenderer {
+	private:
+	public:
+		PageRenderer();
+};
 
 class AgentConfiguration {
 	private:
@@ -32,7 +52,6 @@ class AgentConfiguration {
 		char mqttUsername[64];
 		char mqttPassword[64];
 		char mqttTopic[64];
-		void renderConfigPage(SH1106Wire& display, const char* ssid, const char* password, const char* ip);
 		void createPassword(char* password, int len);
 	public:
 		AgentConfiguration();
@@ -65,6 +84,7 @@ class UserInterface {
 	private:
 		SH1106Wire display;
 		SignalStabilizer buttonStabilizer;
+		Timezone timezone;
 		const unsigned long screensaverTimeout;
 		const unsigned long displayRefreshInterval;
 		Page currentPage;
@@ -79,16 +99,14 @@ class UserInterface {
 		void showInitMessage();
 		void switchDisplayOff();
 		void switchDisplayOn();
-		SH1106Wire& getDisplay();
+		void setTimezone();
+		void renderConfigPage(const char* ssid, const char* password, const char* ip);
 };
 
-void wifi_thread(AgentConfiguration* config);
-
-void initTimezone();
-void renderLoadingPage(SH1106Wire* display);
-void renderHomePage(SH1106Wire* display);
-void renderWifiPage(SH1106Wire* display);
-void renderTimePage(SH1106Wire* display);
-void renderElectricityPage(SH1106Wire* display);
+void renderLoadingPage(SH1106Wire& display);
+void renderHomePage(SH1106Wire& display);
+void renderWifiPage(SH1106Wire& display);
+void renderTimePage(SH1106Wire& display, Timezone& timezone);
+void renderElectricityPage(SH1106Wire& display);
 
 #endif

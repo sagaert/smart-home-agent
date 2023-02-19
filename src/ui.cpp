@@ -17,7 +17,7 @@ void UserInterface::setup() {
 }
 
 void UserInterface::showInitMessage() {
-	renderLoadingPage(&display);
+	renderLoadingPage(this->display);
 	this->display.display();
 }
 
@@ -29,8 +29,8 @@ void UserInterface::switchDisplayOn() {
 	this->displayOn = true;
 }
 
-SH1106Wire& UserInterface::getDisplay() {
-	return this->display;
+void UserInterface::setTimezone() {
+	this->timezone.setLocation(TIMEZONE);
 }
 
 void UserInterface::buttonPressed() {
@@ -74,16 +74,16 @@ void UserInterface::loop() {
 			this->display.clear();
 			switch(this->currentPage) {
 				case WIFI_PAGE:
-					renderWifiPage(&this->display);
+					renderWifiPage(this->display);
 					break;
 				case TIME_PAGE:
-					renderTimePage(&this->display);
+					renderTimePage(this->display, this->timezone);
 					break;
 				case ELECTRICITY_PAGE:
-					renderElectricityPage(&this->display);
+					renderElectricityPage(this->display);
 					break;
 				default:
-					renderHomePage(&this->display);
+					renderHomePage(this->display);
 					break;
 			}
 			this->display.display();
@@ -92,4 +92,27 @@ void UserInterface::loop() {
 			this->display.display();
 		}
 	}
+}
+
+void UserInterface::renderConfigPage(const char* ssid, const char* password, const char* ip) {
+	display.clear();
+
+	display.setFont(ArialMT_Plain_10);
+	display.setTextAlignment(TEXT_ALIGN_LEFT);
+	display.drawString(0, 0, "Konfigurations-Modus");
+	display.drawLine(0, 12, 127, 12);
+
+	char configSSID[32];
+	char configPassword[32];
+	char configIP[32];
+    sprintf(configSSID, "SSID: %s", ssid);
+    sprintf(configPassword, "Password: %s", password);
+    sprintf(configIP, "http://%s", ip);
+
+	display.drawString(0, 15, "Verbindungsdaten:");
+	display.drawString(0, 27, configSSID);
+	display.drawString(0, 39, configPassword);
+	display.drawString(0, 51, configIP);
+
+	display.display();
 }
