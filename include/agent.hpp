@@ -40,9 +40,8 @@ class ConnectionManager {
 		ConnectionManager(unsigned long connectionCheckInterval = 180000UL);
 		void setup(AgentConfiguration& config);
 		void loop(AgentConfiguration& config);
-		void checkConnections(AgentConfiguration& config);
+		bool checkConnections(AgentConfiguration& config);
 		void sendMeasurement(AgentConfiguration& config, long value);
-		bool isConnected();
 };
 
 class PageRenderer {

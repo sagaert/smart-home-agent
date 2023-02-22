@@ -35,12 +35,8 @@ void MeasuringController::loop(AgentConfiguration& config, ConnectionManager& co
 	digitalWrite(REED_STATUS_LED, digitalRead(REED_CONTACT));
 	unsigned long now = millis();
 	if(now - this->lastMeasured > this->currentInterval) {
-		if(connManager.isConnected()) {
-			long value = random(500L, 3000L); // Fake measurement :-)
-			connManager.sendMeasurement(config, value);
-		} else {
-			Serial.println("Not connected, skip sending measurement");
-		}
+		long value = random(500L, 3000L); // Fake measurement :-)
+		connManager.sendMeasurement(config, value);
 		this->lastMeasured = now;
 		this->currentInterval = random(5000L, 10000L);
 	}

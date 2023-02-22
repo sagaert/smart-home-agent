@@ -24,10 +24,8 @@ void setup_run() {
 
 	// Initialize local time from NTP Server and set Timezone
 	ui.showInitMessage();
-	Serial.printf("\nStarting time synchronisation...");
 	ezt::waitForSync();
 	ui.setTimezone();
-	Serial.printf("finished\n\n");
 	ui.switchDisplayOff();
 }
 

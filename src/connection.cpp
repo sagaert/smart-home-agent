@@ -5,26 +5,18 @@ ConnectionManager::ConnectionManager(unsigned long connectionCheckInterval) :
 		this->lastConnectionCheck = 0UL;
 }
 
-void ConnectionManager::checkConnections(AgentConfiguration& config) {
-	Serial.printf("Checking WiFi connection...");
+bool ConnectionManager::checkConnections(AgentConfiguration& config) {
 	if(!WiFi.isConnected()) {
-		Serial.println("not connected! Start reconnect.");
 		WiFi.disconnect();
 		WiFi.begin(config.getWiFiSSID(), config.getWiFiPassword());
+		return false;
 	} else {
-		Serial.println("connected");
-		Serial.printf("Checking MQTT connection...");
 		if(!this->mqttClient.connected()) {
-			Serial.println("not connected! Start reconnect.");
-			this->mqttClient.connect("smart-home-agent", config.getMQTTUsername(), config.getMQTTPassword());
+			return this->mqttClient.connect("smart-home-agent", config.getMQTTUsername(), config.getMQTTPassword());
 		} else {
-			Serial.println("connected");
+			return true;
 		}
 	}
-}
-
-bool ConnectionManager::isConnected() {
-	return WiFi.isConnected() && this->mqttClient.connected();
 }
 
 void ConnectionManager::loop(AgentConfiguration& config) {
@@ -42,10 +34,10 @@ void ConnectionManager::setup(AgentConfiguration& config) {
 }
 
 void ConnectionManager::sendMeasurement(AgentConfiguration& config, long value) {
-	std::string json_t = "{\"time\":\"%s\",\"value\":%d,\"sensor\":\"main\",\"measurement\":\"consumption\",\"field\":\"electricity\"}";
-	char json[128];
-	sprintf(json, json_t.c_str(), UTC.dateTime(RFC3339_EXT).c_str(), value);
-	this->mqttClient.publish(config.getMQTTTopic(), json);
-	Serial.println("Sending measurement:");
-	Serial.println(json);
+	if(this->checkConnections(config)) {
+		std::string json_t = "{\"time\":\"%s\",\"value\":%d,\"sensor\":\"main\",\"measurement\":\"consumption\",\"field\":\"electricity\"}";
+		char json[128];
+		sprintf(json, json_t.c_str(), UTC.dateTime(RFC3339_EXT).c_str(), value);
+		this->mqttClient.publish(config.getMQTTTopic(), json);
+	}
 }
