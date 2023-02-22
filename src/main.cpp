@@ -6,6 +6,8 @@ UserInterface ui(DISPLAY_ADDRESS, BUTTON_PIN);
 
 ConnectionManager connectionManager;
 
+MeasuringController measuringController;
+
 enum ProgramMode {
 	RUN,
 	CONFIG
@@ -17,10 +19,8 @@ void setup_run() {
 	// Load configuration
 	configuration.load();
 
-	// Initialize WiFi
-	WiFi.mode(WIFI_STA);
-	WiFi.begin(configuration.getWiFiSSID(), configuration.getWiFiPassword());
-	Serial.printf("\nStarting WiFi with SSID '%s'.\n\n", configuration.getWiFiSSID());
+	// Initialize WiFi and MQTT client
+	connectionManager.setup(configuration);
 
 	// Initialize local time from NTP Server and set Timezone
 	ui.showInitMessage();
@@ -59,18 +59,17 @@ void setup() {
 }
 
 void loop_run() {
-  digitalWrite(IR_STATUS_LED, !digitalRead(IR_SENSOR));
-  digitalWrite(REED_STATUS_LED, digitalRead(REED_CONTACT));
-  ui.loop();
-  connectionManager.loop(configuration);
+	ui.loop();
+	connectionManager.loop(configuration);
+	measuringController.loop(configuration, connectionManager);
 }
 
 void loop() {
-  // Loop the started mode
-  if(currentProgramMode == RUN)  {
-	loop_run();
-  }
-  if(currentProgramMode == CONFIG)  {
-	configuration.loopConfigMode();
-  }
+	// Loop the started mode
+	if(currentProgramMode == RUN)  {
+		loop_run();
+	}
+	if(currentProgramMode == CONFIG)  {
+		configuration.loopConfigMode();
+	}
 }

@@ -8,6 +8,7 @@
 #include <SH1106Wire.h>
 #include <Preferences.h>
 #include <esp32-config-lib.hpp>
+#include <PubSubClient.h>
 
 #define VERSION "0.0.0"
 
@@ -25,6 +26,7 @@ class AgentConfiguration;
 class SignalStabilizer;
 class PageRenderer;
 class ConnectionManager;
+class MeasuringController;
 
 enum Page {	HOME_PAGE, WIFI_PAGE, TIME_PAGE, ELECTRICITY_PAGE, GAS_PAGE };
 
@@ -32,9 +34,15 @@ class ConnectionManager {
 	private:
 		unsigned long lastConnectionCheck;
 		const unsigned long connectionCheckInterval;
+		WiFiClient wifiClient;
+		PubSubClient mqttClient;
 	public:
 		ConnectionManager(unsigned long connectionCheckInterval = 180000UL);
+		void setup(AgentConfiguration& config);
 		void loop(AgentConfiguration& config);
+		void checkConnections(AgentConfiguration& config);
+		void sendMeasurement(AgentConfiguration& config, long value);
+		bool isConnected();
 };
 
 class PageRenderer {
@@ -56,7 +64,8 @@ class AgentConfiguration {
 		esp32config::Server* server;
 		char wifiSSID[32];
 		char wifiPawword[64];
-		char mqttURL[64];
+		char mqttHost[64];
+		int mqttPort;
 		char mqttUsername[64];
 		char mqttPassword[64];
 		char mqttTopic[64];
@@ -65,7 +74,8 @@ class AgentConfiguration {
 		AgentConfiguration();
 		char* getWiFiSSID();
 		char* getWiFiPassword();
-		char* getMQTTURL();
+		char* getMQTTHost();
+		int getMQTTPort();
 		char* getMQTTUsername();
 		char* getMQTTPassword();
 		char* getMQTTTopic();
@@ -110,6 +120,15 @@ class UserInterface {
 		void setTimezone();
 		void showInitMessage();
 		void showConfigMessage(const char* ssid, const char* password, const char* ip);
+};
+
+class MeasuringController {
+	private:
+		unsigned long lastMeasured;
+		unsigned long currentInterval;
+	public:
+		void loop(AgentConfiguration& config, ConnectionManager& connManager);
+		void setup();
 };
 
 #endif
