@@ -25,6 +25,27 @@ void SignalStabilizer::loop() {
 	}
 }
 
+void MeasuringController::setup() {
+	this->lastMeasured = millis();
+	this->currentInterval = random(5000L, 10000L);
+}
+
+void MeasuringController::loop(AgentConfiguration& config, ConnectionManager& connManager) {
+	digitalWrite(IR_STATUS_LED, !digitalRead(IR_SENSOR));
+	digitalWrite(REED_STATUS_LED, digitalRead(REED_CONTACT));
+	unsigned long now = millis();
+	if(now - this->lastMeasured > this->currentInterval) {
+		if(connManager.isConnected()) {
+			long value = random(500L, 3000L); // Fake measurement :-)
+			connManager.sendMeasurement(config, value);
+		} else {
+			Serial.println("Not connected, skip sending measurement");
+		}
+		this->lastMeasured = now;
+		this->currentInterval = random(5000L, 10000L);
+	}
+}
+
 // Generating an UTC Timestamp in RFC3339 with milliseconds:
 void someMethod() {
 	UTC.dateTime(RFC3339_EXT);

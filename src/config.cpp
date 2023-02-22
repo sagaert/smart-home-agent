@@ -1,7 +1,7 @@
 #include <agent.hpp>
 
 AgentConfiguration::AgentConfiguration() :
-	server(nullptr), wifiSSID(""), wifiPawword(""), mqttURL(""), mqttUsername(""), mqttPassword(""), mqttTopic("") {
+	server(nullptr), wifiSSID(""), wifiPawword(""), mqttHost(""), mqttPort(0), mqttUsername(""), mqttPassword(""), mqttTopic("") {
 }
 	
 char* AgentConfiguration::getWiFiSSID() {
@@ -12,8 +12,12 @@ char* AgentConfiguration::getWiFiPassword() {
 	return this->wifiPawword;
 }
 
-char* AgentConfiguration::getMQTTURL() {
-	return this->mqttURL;
+char* AgentConfiguration::getMQTTHost() {
+	return this->mqttHost;
+}
+
+int AgentConfiguration::getMQTTPort() {
+	return this->mqttPort;
 }
 
 char* AgentConfiguration::getMQTTUsername() {
@@ -39,10 +43,12 @@ void AgentConfiguration::load() {
 	wifi.getString("password", this->wifiPawword, 63);
 
 	// Initialize MQTT
-	mqtt.getString("url", this->mqttURL, 63);
+	mqtt.getString("host", this->mqttHost, 63);
+	this->mqttPort = mqtt.getInt("port");
 	mqtt.getString("username", this->mqttUsername, 63);
 	mqtt.getString("password", this->mqttPassword, 63);
-	mqtt.getString("topic", this->mqttURL, 63);
+	mqtt.getString("topic", this->mqttTopic, 63);
+
 }
 
 void AgentConfiguration::setupConfigMode(UserInterface& ui) {
@@ -52,7 +58,8 @@ void AgentConfiguration::setupConfigMode(UserInterface& ui) {
 				new esp32config::Entry("Password", esp32config::PASSWORD, "password")
 			}),
 			new esp32config::Namespace("MQTT", "mqtt", {
-				new esp32config::Entry("URL", esp32config::TEXT, "url"),
+				new esp32config::Entry("Host", esp32config::TEXT, "host"),
+				new esp32config::Entry("Port", esp32config::INTEGER, "port"),
 				new esp32config::Entry("Username", esp32config::TEXT, "username"),
 				new esp32config::Entry("Password",esp32config::PASSWORD, "password"),
 				new esp32config::Entry("Topic",esp32config::TEXT, "topic", false, "smart-home")
