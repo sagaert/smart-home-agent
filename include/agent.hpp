@@ -3,12 +3,12 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <MQTT.h>
 #include <ezTime.h>
 #include <Wire.h>
 #include <SH1106Wire.h>
 #include <Preferences.h>
 #include <esp32-config-lib.hpp>
-#include <PubSubClient.h>
 
 #define VERSION "0.0.0"
 
@@ -35,7 +35,7 @@ class ConnectionManager {
 		unsigned long lastConnectionCheck;
 		const unsigned long connectionCheckInterval;
 		WiFiClient wifiClient;
-		PubSubClient mqttClient;
+		MQTTClient mqttClient;
 	public:
 		ConnectionManager(unsigned long connectionCheckInterval = 180000UL);
 		void setup(AgentConfiguration& config);

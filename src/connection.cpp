@@ -1,7 +1,7 @@
 #include <agent.hpp>
 
 ConnectionManager::ConnectionManager(unsigned long connectionCheckInterval) :
-	connectionCheckInterval(connectionCheckInterval), mqttClient(PubSubClient(this->wifiClient)) {
+	connectionCheckInterval(connectionCheckInterval), mqttClient(MQTTClient(1024)) {
 		this->lastConnectionCheck = 0UL;
 }
 
@@ -29,7 +29,7 @@ void ConnectionManager::loop(AgentConfiguration& config) {
 
 void ConnectionManager::setup(AgentConfiguration& config) {
 	WiFi.mode(WIFI_STA);
-	this->mqttClient.setServer(config.getMQTTHost(), config.getMQTTPort());
+	this->mqttClient.begin(config.getMQTTHost(), config.getMQTTPort(), this->wifiClient);
 	this->checkConnections(config);
 }
 
