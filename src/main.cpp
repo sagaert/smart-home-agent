@@ -2,11 +2,13 @@
 
 AgentConfiguration configuration;
 
-UserInterface ui(DISPLAY_ADDRESS, BUTTON_PIN);
-
 ConnectionManager connectionManager;
 
-MeasuringController measuringController;
+MeasuringController electricityMeasuringController(connectionManager, configuration, "electricity", IR_SENSOR, LOW, 500UL, IR_STATUS_LED, 750.0);
+
+MeasuringController gasMeasuringController(connectionManager, configuration, "gas", REED_CONTACT, HIGH, 5000UL, REED_STATUS_LED, 0.1);
+
+UserInterface ui(electricityMeasuringController, gasMeasuringController, DISPLAY_ADDRESS, BUTTON_PIN);
 
 enum ProgramMode {
 	RUN,
@@ -27,6 +29,10 @@ void setup_run() {
 	ezt::waitForSync();
 	ui.setTimezone();
 	ui.switchDisplayOff();
+
+	// Initialize measuring controller
+	electricityMeasuringController.setup();
+	gasMeasuringController.setup();
 }
 
 void setup() {
@@ -59,7 +65,8 @@ void setup() {
 void loop_run() {
 	ui.loop();
 	connectionManager.loop(configuration);
-	measuringController.loop(configuration, connectionManager);
+	electricityMeasuringController.loop();
+	gasMeasuringController.loop();
 }
 
 void loop() {

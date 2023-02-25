@@ -1,10 +1,11 @@
 #include <agent.hpp>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
 
-UserInterface::UserInterface(int displayAddress, int buttonPin, unsigned long screensaverTimeout, unsigned long displayRefreshInterval, unsigned long buttonStabilizerInterval) :
+UserInterface::UserInterface(MeasuringController& electricity, MeasuringController& gas, int displayAddress, int buttonPin, unsigned long screensaverTimeout, unsigned long displayRefreshInterval, unsigned long buttonStabilizerInterval) :
 	buttonStabilizer(SignalStabilizer(buttonPin, LOW, buttonStabilizerInterval, std::bind(&UserInterface::buttonPressed, this))),
 	display(SH1106Wire(displayAddress, SDA, SCL)),
 	screensaverTimeout(screensaverTimeout),
-	displayRefreshInterval(displayRefreshInterval) {
+	displayRefreshInterval(displayRefreshInterval),
+	electricity(electricity), gas(gas) {
 	this->currentPage = HOME_PAGE;
 	this->displayOn = false;
 	this->buttonPressedTime = 0UL;
@@ -54,6 +55,9 @@ void UserInterface::buttonPressed() {
 			case TIME_PAGE:
 				this->currentPage = ELECTRICITY_PAGE;
 				break;
+			case ELECTRICITY_PAGE:
+				this->currentPage = GAS_PAGE;
+				break;
 			default:
 				this->currentPage = HOME_PAGE;
 				break;
@@ -87,7 +91,10 @@ void UserInterface::loop() {
 					this->renderer.renderTimePage(this->display, this->timezone);
 					break;
 				case ELECTRICITY_PAGE:
-					this->renderer.renderElectricityPage(this->display);
+					this->renderer.renderElectricityPage(this->display, this->electricity);
+					break;
+				case GAS_PAGE:
+					this->renderer.renderGasPage(this->display, this->gas);
 					break;
 				default:
 					this->renderer.renderHomePage(this->display);

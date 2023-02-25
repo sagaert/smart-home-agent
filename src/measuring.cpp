@@ -25,24 +25,34 @@ void SignalStabilizer::loop() {
 	}
 }
 
+MeasuringController::MeasuringController(ConnectionManager& connManager, AgentConfiguration& config, const std::string& field, const int inputPin, const int triggerStatus, const unsigned long sensorStabilizerInterval, const int outputLED, const double consumptionPerTrigger) :
+	config(config), connManager(connManager), field(field), inputPin(inputPin), triggerStatus(triggerStatus), outputLED(outputLED), consumptionPerTrigger(consumptionPerTrigger),
+	sensorStabilizer(SignalStabilizer(inputPin, triggerStatus, sensorStabilizerInterval, std::bind(&MeasuringController::consumptionMeasured, this))) {
+}
+
 void MeasuringController::setup() {
-	this->lastMeasured = millis();
-	this->currentInterval = random(5000L, 10000L);
+	this->lastMeasured = 0UL;
+	this->currentConsumption = 0.0;
 }
 
-void MeasuringController::loop(AgentConfiguration& config, ConnectionManager& connManager) {
-	digitalWrite(IR_STATUS_LED, !digitalRead(IR_SENSOR));
-	digitalWrite(REED_STATUS_LED, digitalRead(REED_CONTACT));
+void MeasuringController::loop() {
+	// Update the status LED
+	digitalWrite(this->outputLED, digitalRead(this->inputPin) == this->triggerStatus);
+
+	// Loop the sensor stabilizer
+	this->sensorStabilizer.loop();
+}
+
+void MeasuringController::consumptionMeasured() {
 	unsigned long now = millis();
-	if(now - this->lastMeasured > this->currentInterval) {
-		long value = random(500L, 3000L); // Fake measurement :-)
-		connManager.sendMeasurement(config, value);
-		this->lastMeasured = now;
-		this->currentInterval = random(5000L, 10000L);
+	if(this->lastMeasured > 0UL) {
+		unsigned long period = now - this->lastMeasured;
+		this->currentConsumption = this->consumptionPerTrigger / (double)(period) * 3600000UL;
+		this->connManager.sendMeasurement(this->config, this->currentConsumption, this->field);
 	}
+	this->lastMeasured = now;
 }
 
-// Generating an UTC Timestamp in RFC3339 with milliseconds:
-void someMethod() {
-	UTC.dateTime(RFC3339_EXT);
+double MeasuringController::getCurrentConsumption() {
+	return this->currentConsumption;
 }
