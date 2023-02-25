@@ -4,7 +4,7 @@ AgentConfiguration configuration;
 
 ConnectionManager connectionManager;
 
-MeasuringController electricityMeasuringController(connectionManager, configuration, "electricity", IR_SENSOR, LOW, 500UL, IR_STATUS_LED, 750.0);
+MeasuringController electricityMeasuringController(connectionManager, configuration, "electricity", IR_SENSOR, HIGH, 500UL, IR_STATUS_LED, 13.33);
 
 MeasuringController gasMeasuringController(connectionManager, configuration, "gas", REED_CONTACT, HIGH, 5000UL, REED_STATUS_LED, 0.1);
 

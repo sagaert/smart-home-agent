@@ -47,7 +47,7 @@ void MeasuringController::consumptionMeasured() {
 	unsigned long now = millis();
 	if(this->lastMeasured > 0UL) {
 		unsigned long period = now - this->lastMeasured;
-		this->currentConsumption = this->consumptionPerTrigger / (double)(period) * 3600000UL;
+		this->currentConsumption = 3600000UL / (double)(period) * this->consumptionPerTrigger;
 		this->connManager.sendMeasurement(this->config, this->currentConsumption, this->field);
 	}
 	this->lastMeasured = now;
