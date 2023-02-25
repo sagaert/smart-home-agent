@@ -3,12 +3,12 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <MQTT.h>
 #include <ezTime.h>
 #include <Wire.h>
 #include <SH1106Wire.h>
 #include <Preferences.h>
 #include <esp32-config-lib.hpp>
-#include <PubSubClient.h>
 
 #define VERSION "0.0.0"
 
@@ -35,13 +35,13 @@ class ConnectionManager {
 		unsigned long lastConnectionCheck;
 		const unsigned long connectionCheckInterval;
 		WiFiClient wifiClient;
-		PubSubClient mqttClient;
+		MQTTClient mqttClient;
 	public:
 		ConnectionManager(unsigned long connectionCheckInterval = 180000UL);
 		void setup(AgentConfiguration& config);
 		void loop(AgentConfiguration& config);
 		bool checkConnections(AgentConfiguration& config);
-		void sendMeasurement(AgentConfiguration& config, long value);
+		void sendMeasurement(AgentConfiguration& config, double value, const std::string& field);
 };
 
 class PageRenderer {
@@ -53,7 +53,8 @@ class PageRenderer {
 		void renderHomePage(SH1106Wire& display);
 		void renderWifiPage(SH1106Wire& display);
 		void renderTimePage(SH1106Wire& display, Timezone& timezone);
-		void renderElectricityPage(SH1106Wire& display);
+		void renderElectricityPage(SH1106Wire& display, MeasuringController& measuringController);
+		void renderGasPage(SH1106Wire& display, MeasuringController& measuringController);
 		void renderLoadingPage(SH1106Wire& display);
 		void renderConfigPage(SH1106Wire& display, const char* ssid, const char* password, const char* ip);
 };
@@ -110,8 +111,10 @@ class UserInterface {
 		unsigned long buttonPressedTime;
 		unsigned long lastRenderingTime;
 		void buttonPressed();
+		MeasuringController& electricity;
+		MeasuringController& gas;
 	public:
-		UserInterface(int displayAddress, int buttonPin, unsigned long screensaverTimeout = 60000UL, unsigned long displayRefreshInterval = 100UL, unsigned long buttonStabilizerInterval = 100UL);
+		UserInterface(MeasuringController& electricity, MeasuringController& gas, int displayAddress, int buttonPin, unsigned long screensaverTimeout = 60000UL, unsigned long displayRefreshInterval = 100UL, unsigned long buttonStabilizerInterval = 100UL);
 		void loop();
 		void setup();
 		void switchDisplayOff();
@@ -124,10 +127,21 @@ class UserInterface {
 class MeasuringController {
 	private:
 		unsigned long lastMeasured;
-		unsigned long currentInterval;
+		double currentConsumption;
+		const double consumptionPerTrigger;
+		const int inputPin;
+		const int triggerStatus;
+		const int outputLED;
+		std::string field;
+		SignalStabilizer sensorStabilizer;
+		void consumptionMeasured();
+		AgentConfiguration& config;
+		ConnectionManager& connManager;
 	public:
-		void loop(AgentConfiguration& config, ConnectionManager& connManager);
+		MeasuringController(ConnectionManager& connManager, AgentConfiguration& config, const std::string& field, const int inputPin, const int triggerStatus, const unsigned long sensorStabilizerInterval, const int outputLED, const double consumptionPerTrigger);
+		void loop();
 		void setup();
+		double getCurrentConsumption();
 };
 
 #endif

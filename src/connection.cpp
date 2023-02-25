@@ -1,7 +1,7 @@
 #include <agent.hpp>
 
 ConnectionManager::ConnectionManager(unsigned long connectionCheckInterval) :
-	connectionCheckInterval(connectionCheckInterval), mqttClient(PubSubClient(this->wifiClient)) {
+	connectionCheckInterval(connectionCheckInterval), mqttClient(MQTTClient(1024)) {
 		this->lastConnectionCheck = 0UL;
 }
 
@@ -29,15 +29,15 @@ void ConnectionManager::loop(AgentConfiguration& config) {
 
 void ConnectionManager::setup(AgentConfiguration& config) {
 	WiFi.mode(WIFI_STA);
-	this->mqttClient.setServer(config.getMQTTHost(), config.getMQTTPort());
+	this->mqttClient.begin(config.getMQTTHost(), config.getMQTTPort(), this->wifiClient);
 	this->checkConnections(config);
 }
 
-void ConnectionManager::sendMeasurement(AgentConfiguration& config, long value) {
+void ConnectionManager::sendMeasurement(AgentConfiguration& config, double value, const std::string& field) {
 	if(this->checkConnections(config)) {
-		std::string json_t = "{\"time\":\"%s\",\"value\":%d,\"sensor\":\"main\",\"measurement\":\"consumption\",\"field\":\"electricity\"}";
-		char json[128];
-		sprintf(json, json_t.c_str(), UTC.dateTime(RFC3339_EXT).c_str(), value);
+		std::string json_t = "{\"time\":\"%s\",\"value\":%16.2f,\"sensor\":\"main\",\"measurement\":\"consumption\",\"field\":\"%s\"}";
+		char json[256];
+		sprintf(json, json_t.c_str(), UTC.dateTime(RFC3339_EXT).c_str(), value, field.c_str());
 		this->mqttClient.publish(config.getMQTTTopic(), json);
 	}
 }

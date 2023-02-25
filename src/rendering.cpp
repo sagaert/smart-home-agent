@@ -87,11 +87,28 @@ void PageRenderer::renderTimePage(SH1106Wire& display, Timezone& timezone) {
 	display.drawString(127, 27, timeString);
 }
 
-void PageRenderer::renderElectricityPage(SH1106Wire& display) {
+void PageRenderer::renderElectricityPage(SH1106Wire& display, MeasuringController& measuringController) {
 	display.setFont(ArialMT_Plain_10);
 	display.setTextAlignment(TEXT_ALIGN_LEFT);
 	display.drawString(0, 0, "Stromverbrauch");
 	display.drawLine(0, 12, 127, 12);
+	display.setFont(ArialMT_Plain_16);
+	display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
+	char consumptionString[36];
+	sprintf(consumptionString, "%3.2f kWh", measuringController.getCurrentConsumption() / 1000.0);
+	display.drawString(64, 38, consumptionString);	
+}
+
+void PageRenderer::renderGasPage(SH1106Wire& display, MeasuringController& measuringController) {
+	display.setFont(ArialMT_Plain_10);
+	display.setTextAlignment(TEXT_ALIGN_LEFT);
+	display.drawString(0, 0, "Gasverbrauch");
+	display.drawLine(0, 12, 127, 12);
+	display.setFont(ArialMT_Plain_16);
+	display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
+	char consumptionString[36];
+	sprintf(consumptionString, "%2.3f m³/h", measuringController.getCurrentConsumption());
+	display.drawString(64, 38, consumptionString);	
 }
 
 void PageRenderer::renderConfigPage(SH1106Wire& display, const char* ssid, const char* password, const char* ip) {
