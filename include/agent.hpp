@@ -65,7 +65,7 @@ class AgentConfiguration {
 		char wifiSSID[32];
 		char wifiPawword[64];
 		char influxURL[64];
-		char influxToken[64];
+		char influxToken[128];
 		char influxOrg[64];
 		char influxBucket[64];
 		std::string createPassword(int len);

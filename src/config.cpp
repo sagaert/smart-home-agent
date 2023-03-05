@@ -40,7 +40,7 @@ void AgentConfiguration::load() {
 
 	// Initialize Influx
 	influx.getString("url", this->influxURL, 63);
-	influx.getString("token", this->influxToken, 63);
+	influx.getString("token", this->influxToken, 127);
 	influx.getString("org", this->influxOrg, 63);
 	influx.getString("bucket", this->influxBucket, 63);
 }
