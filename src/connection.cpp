@@ -1,7 +1,7 @@
 #include <agent.hpp>
 
 ConnectionManager::ConnectionManager(unsigned long connectionCheckInterval) :
-	connectionCheckInterval(connectionCheckInterval), mqttClient(MQTTClient(1024)) {
+	connectionCheckInterval(connectionCheckInterval) {
 		this->lastConnectionCheck = 0UL;
 }
 
@@ -11,11 +11,7 @@ bool ConnectionManager::checkConnections(AgentConfiguration& config) {
 		WiFi.begin(config.getWiFiSSID(), config.getWiFiPassword());
 		return false;
 	} else {
-		if(!this->mqttClient.connected()) {
-			return this->mqttClient.connect("smart-home-agent", config.getMQTTUsername(), config.getMQTTPassword());
-		} else {
-			return true;
-		}
+		return true;
 	}
 }
 
@@ -29,15 +25,15 @@ void ConnectionManager::loop(AgentConfiguration& config) {
 
 void ConnectionManager::setup(AgentConfiguration& config) {
 	WiFi.mode(WIFI_STA);
-	this->mqttClient.begin(config.getMQTTHost(), config.getMQTTPort(), this->wifiClient);
+	this->influxDBClient.setConnectionParams(config.getInfluxURL(), config.getInfluxOrg(), config.getInfluxBucket(), config.getInfluxToken());
 	this->checkConnections(config);
 }
 
 void ConnectionManager::sendMeasurement(AgentConfiguration& config, double value, const std::string& field) {
 	if(this->checkConnections(config)) {
-		std::string json_t = "{\"time\":\"%s\",\"value\":%16.2f,\"sensor\":\"main\",\"measurement\":\"consumption\",\"field\":\"%s\"}";
-		char json[256];
-		sprintf(json, json_t.c_str(), UTC.dateTime(RFC3339_EXT).c_str(), value, field.c_str());
-		this->mqttClient.publish(config.getMQTTTopic(), json);
+		Point point("consumption");
+		point.addField(field.c_str(), value);
+		point.addTag("sensor", "main");
+		this->influxDBClient.writePoint(point);
 	}
 }
