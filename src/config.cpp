@@ -1,7 +1,7 @@
 #include <agent.hpp>
 
 AgentConfiguration::AgentConfiguration() :
-	server(nullptr), wifiSSID(""), wifiPawword(""), mqttHost(""), mqttPort(0), mqttUsername(""), mqttPassword(""), mqttTopic("") {
+	server(nullptr), wifiSSID(""), wifiPawword(""), influxURL(""), influxToken(""), influxOrg(""), influxBucket("") {
 }
 	
 char* AgentConfiguration::getWiFiSSID() {
@@ -12,43 +12,37 @@ char* AgentConfiguration::getWiFiPassword() {
 	return this->wifiPawword;
 }
 
-char* AgentConfiguration::getMQTTHost() {
-	return this->mqttHost;
+char* AgentConfiguration::getInfluxURL() {
+	return this->influxURL;
 }
 
-int AgentConfiguration::getMQTTPort() {
-	return this->mqttPort;
+char* AgentConfiguration::getInfluxToken() {
+	return this->influxToken;
 }
 
-char* AgentConfiguration::getMQTTUsername() {
-	return this->mqttUsername;
+char* AgentConfiguration::getInfluxOrg() {
+	return this->influxOrg;
 }
 
-char* AgentConfiguration::getMQTTPassword() {
-	return this->mqttPassword;
-}
-
-char* AgentConfiguration::getMQTTTopic() {
-	return this->mqttTopic;
+char* AgentConfiguration::getInfluxBucket() {
+	return this->influxBucket;
 }
 
 void AgentConfiguration::load() {
 	// Read preferences
-	Preferences wifi, mqtt;
+	Preferences wifi, influx;
 	wifi.begin("wifi", true);
-	mqtt.begin("mqtt", true);
+	influx.begin("influx", true);
 
 	// Initialize WiFi
 	wifi.getString("ssid", this->wifiSSID, 31);
 	wifi.getString("password", this->wifiPawword, 63);
 
-	// Initialize MQTT
-	mqtt.getString("host", this->mqttHost, 63);
-	this->mqttPort = mqtt.getInt("port");
-	mqtt.getString("username", this->mqttUsername, 63);
-	mqtt.getString("password", this->mqttPassword, 63);
-	mqtt.getString("topic", this->mqttTopic, 63);
-
+	// Initialize Influx
+	influx.getString("url", this->influxURL, 63);
+	influx.getString("token", this->influxToken, 63);
+	influx.getString("org", this->influxOrg, 63);
+	influx.getString("bucket", this->influxBucket, 63);
 }
 
 void AgentConfiguration::setupConfigMode(UserInterface& ui) {
@@ -57,12 +51,11 @@ void AgentConfiguration::setupConfigMode(UserInterface& ui) {
 				new esp32config::Entry("SSID", esp32config::TEXT, "ssid"),
 				new esp32config::Entry("Password", esp32config::PASSWORD, "password")
 			}),
-			new esp32config::Namespace("MQTT", "mqtt", {
-				new esp32config::Entry("Host", esp32config::TEXT, "host"),
-				new esp32config::Entry("Port", esp32config::INTEGER, "port"),
-				new esp32config::Entry("Username", esp32config::TEXT, "username"),
-				new esp32config::Entry("Password",esp32config::PASSWORD, "password"),
-				new esp32config::Entry("Topic",esp32config::TEXT, "topic", false, "smart-home")
+			new esp32config::Namespace("InfluxDB", "influx", {
+				new esp32config::Entry("URL", esp32config::TEXT, "url"),
+				new esp32config::Entry("Token", esp32config::PASSWORD, "token"),
+				new esp32config::Entry("Org", esp32config::PASSWORD, "org"),
+				new esp32config::Entry("Bucket", esp32config::PASSWORD, "bucket")
 			})}
 		);
 	this->server = new esp32config::Server(config);

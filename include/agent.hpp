@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include <MQTT.h>
+#include <InfluxDbClient.h>
 #include <ezTime.h>
 #include <Wire.h>
 #include <SH1106Wire.h>
@@ -35,7 +35,7 @@ class ConnectionManager {
 		unsigned long lastConnectionCheck;
 		const unsigned long connectionCheckInterval;
 		WiFiClient wifiClient;
-		MQTTClient mqttClient;
+		InfluxDBClient influxDBClient;
 	public:
 		ConnectionManager(unsigned long connectionCheckInterval = 180000UL);
 		void setup(AgentConfiguration& config);
@@ -64,21 +64,19 @@ class AgentConfiguration {
 		esp32config::Server* server;
 		char wifiSSID[32];
 		char wifiPawword[64];
-		char mqttHost[64];
-		int mqttPort;
-		char mqttUsername[64];
-		char mqttPassword[64];
-		char mqttTopic[64];
+		char influxURL[64];
+		char influxToken[64];
+		char influxOrg[64];
+		char influxBucket[64];
 		std::string createPassword(int len);
 	public:
 		AgentConfiguration();
 		char* getWiFiSSID();
 		char* getWiFiPassword();
-		char* getMQTTHost();
-		int getMQTTPort();
-		char* getMQTTUsername();
-		char* getMQTTPassword();
-		char* getMQTTTopic();
+		char* getInfluxURL();
+		char* getInfluxToken();
+		char* getInfluxOrg();
+		char* getInfluxBucket();
 		void load();
 		void setupConfigMode(UserInterface& ui);
 		void loopConfigMode();
