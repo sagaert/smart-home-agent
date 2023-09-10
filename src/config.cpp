@@ -28,11 +28,16 @@ char* AgentConfiguration::getInfluxBucket() {
 	return this->influxBucket;
 }
 
+char* AgentConfiguration::getCertRootCA() {
+	return this->certRootCA;
+}
+
 void AgentConfiguration::load() {
 	// Read preferences
-	Preferences wifi, influx;
+	Preferences wifi, influx, cert;
 	wifi.begin("wifi", true);
 	influx.begin("influx", true);
+	cert.begin("cert", true);
 
 	// Initialize WiFi
 	wifi.getString("ssid", this->wifiSSID, 31);
@@ -43,6 +48,9 @@ void AgentConfiguration::load() {
 	influx.getString("token", this->influxToken, 127);
 	influx.getString("org", this->influxOrg, 63);
 	influx.getString("bucket", this->influxBucket, 63);
+
+	// Initialize Cert
+	cert.getString("rootca", this->certRootCA, 2047);
 }
 
 void AgentConfiguration::setupConfigMode(UserInterface& ui) {
@@ -56,6 +64,9 @@ void AgentConfiguration::setupConfigMode(UserInterface& ui) {
 				new esp32config::Entry("Token", esp32config::PASSWORD, "token"),
 				new esp32config::Entry("Org", esp32config::PASSWORD, "org"),
 				new esp32config::Entry("Bucket", esp32config::PASSWORD, "bucket")
+			}),
+			new esp32config::Namespace("Certificate", "cert", {
+				new esp32config::Entry("Root-CA", esp32config::TEXTAREA, "rootca")
 			})}
 		);
 	this->server = new esp32config::Server(config);

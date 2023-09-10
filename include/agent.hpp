@@ -34,7 +34,7 @@ class ConnectionManager {
 	private:
 		unsigned long lastConnectionCheck;
 		const unsigned long connectionCheckInterval;
-		WiFiClient wifiClient;
+		WiFiClientSecure wifiClient;
 		InfluxDBClient influxDBClient;
 	public:
 		ConnectionManager(unsigned long connectionCheckInterval = 180000UL);
@@ -68,6 +68,7 @@ class AgentConfiguration {
 		char influxToken[128];
 		char influxOrg[64];
 		char influxBucket[64];
+		char certRootCA[2048];
 		std::string createPassword(int len);
 	public:
 		AgentConfiguration();
@@ -77,6 +78,7 @@ class AgentConfiguration {
 		char* getInfluxToken();
 		char* getInfluxOrg();
 		char* getInfluxBucket();
+		char* getCertRootCA();
 		void load();
 		void setupConfigMode(UserInterface& ui);
 		void loopConfigMode();
