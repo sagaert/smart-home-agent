@@ -25,8 +25,7 @@ void ConnectionManager::loop(AgentConfiguration& config) {
 
 void ConnectionManager::setup(AgentConfiguration& config) {
 	WiFi.mode(WIFI_STA);
-	this->wifiClient.setCACert(config.getCertRootCA());
-	this->influxDBClient.setConnectionParams(config.getInfluxURL(), config.getInfluxOrg(), config.getInfluxBucket(), config.getInfluxToken());
+	this->influxDBClient.setConnectionParams(config.getInfluxURL(), config.getInfluxOrg(), config.getInfluxBucket(), config.getInfluxToken(), config.getCertRootCA());
 	this->checkConnections(config);
 }
 

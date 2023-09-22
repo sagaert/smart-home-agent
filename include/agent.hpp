@@ -34,7 +34,6 @@ class ConnectionManager {
 	private:
 		unsigned long lastConnectionCheck;
 		const unsigned long connectionCheckInterval;
-		WiFiClientSecure wifiClient;
 		InfluxDBClient influxDBClient;
 	public:
 		ConnectionManager(unsigned long connectionCheckInterval = 180000UL);
