@@ -34,6 +34,8 @@ void ConnectionManager::sendMeasurement(AgentConfiguration& config, double value
 		Point point("consumption");
 		point.addField(field.c_str(), value);
 		point.addTag("sensor", "main");
-		this->influxDBClient.writePoint(point);
+		if(!this->influxDBClient.writePoint(point)) {
+			Serial.printf("Fehler beim Senden der Daten an die InfluxDB (Status Code %d): %s\n", this->influxDBClient.getLastStatusCode(), this->influxDBClient.getLastErrorMessage().c_str());
+		}
 	}
 }
